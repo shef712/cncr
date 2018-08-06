@@ -1,0 +1,99 @@
+*INTRODUCTION*
+
+Libretro is a simple API that allows for the creation of games and emulators.
+Gym Retro is a wrapper for video game emulator cores using the Libretro API to turn them into Gym environments.
+Gym Retro (GR) supports several consoles: Atari, Sega, NEC and Nintendo - including GBA and SNES.
+
+Each game will have files listing memory locations for:
+- in-game variables, 
+- reward functions based on those variables, episode and conditions,
+- savestates at the beginning of levels
+
+There is also a file containing hashes of ROMS that work with these files.
+
+Most of the ROMS will have to be self-obtained.
+
+
+*INSTALLATION*
+
+LINK: https://github.com/openai/retro/tree/develop
+
+Using along with Ubuntu 16.04, pre-packaged with pythin 3.5.2.
+
+Built first using commands:
+git clone --recursive https://github.com/openai/retro.git gym-retro
+cd gym-retro
+pip3 install -e .
+
+We can use a GR environment like we do a standard Gym enviornment.
+
+Installed the integration UI, which helps us easily find variables and configure the reward function for environments yet defined.
+
+Installed from source using commands (within the "gym-retro" folder created from building above):
+sudo apt-get install libcapnp-dev libqt5opengl5-dev qtbase5-dev
+cmake . -DBUILD_UI=ON -UPYLIB_DIRECTORY
+make -j$(grep -c ^processor /proc/cpuinfo)
+./gym-retro-integration
+
+The last command opens up the Integration UI while in the "gym-retro" folder.
+
+EXTRA: had to install "capnproto" and "libbz2-dev".
+
+
+*LEARNING*
+
+What environments are there?
+import retro
+retro.list_games()
+
+USA versions of ROMS are preferred.
+
+Non-commerical ROMs are included with Gym Retro for testing purposes. The provided ROMS can be found in tests/roms. May need to place other ROMS in here too to work with integration.
+
+We can import ROMs using "retro.import".
+This must place the ROMs in the path "tests/roms" or in the "environment" folder for the game. 
+Though using the Integreation UI, we may be able to load the game from wherever, need to be clear about where the ROMs need to be placed.
+(TODO)
+python3 -m retro.import /path/to/your/ROMs/directory/
+
+
+What initial states are there?
+import retro
+for game in retro.list_games():
+    print(game, retro.list_states(game))
+
+While the ROMS are not provided, the states for many games are provided where stable games can be found in retro/data/stable.
+The "sorted" and "reject" folders seem to have been replaced by the "stable" and "experimental" folders.
+
+Use the Gym Retro Integration application and select the Integrate option from the File menu to begin working on integrating it.
+Will use https://github.com/openai/retro/blob/develop/IntegratorsGuide.md to work with the Integration application.
+
+Sometimes ROMs use different extensions, e.g. .gen for Genesis, .bin for Atari, etc. Rename the ROMs to use the aforementioned extensions in these cases. SEE list of ROM extensions.
+
+
+SEE random_agent.py for example code. We can work with the environment of a game once the states are sorted for the game. Not sure if we can use as a Gym normal environment when we use an integrated game, though there does seem to be a difference between using the environment as a normal Gym environment.(TODO).
+
+
+A typical structure for an environment in the retro/data/stable/[game] folder contains 5 files:
+- the state file gzipped
+Emulation allows the entire state of a game to be stored to disk and restored. These files are specific to the emulator but always end with ".state". These are identical to the versions used in the standalone versions of the emulators, but gzipped.
+
+- metadata.json 
+Seems to contain the "default state" of the game).
+
+- rom.sha 
+"sha1sum is a computer program that calculates and verifies SHA-1 hashes. It is commonly used to verify the integrity of files". This file must link the hashes of the ROM with the "environment" files.
+
+- data.json
+
+
+- scenario.json
+
+
+I wonder if all the game "environments" included are enough for the game to work in the default setting. If we want a custom state we can define it ourselves too. Might not be a need to learn the Integration application if this is the case, assuming wanted game's environment folder is included.
+
+There must be requirements needed to be provided in the files in the environment folder that allows us to use the game environment in code. So the reward function and done variables are definite two. Look at cartpole, and see what the environment is defined for us, which allowed us to this in the proposal work.
+
+
+*GAME*
+Streetfighter 2

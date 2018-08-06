@@ -1,0 +1,32 @@
+PLAN
+----
+
+Building an AI to play Streetfighter 2.
+
+Tournament-style simulation between all characters. 
+
+Each character would have to train against all other characters as part of the training process, and would be re-run for a certain amount of games at a time. Some players will probably win more games than others due to the character specific skills and the mechanics of the game.
+
+Casting as a reinforcement learning problem, the AI will make observations about the world, select an action to take and then received a reward for that action.
+
+We need to define our observations, actions and our rewards.
+...
+
+
+SETUP
+-----
+need to automate the menu options to start the simulation, and restart games
+- this should be straightforward -> check action space, and coordinate button presses needed to start the game for each frame/timestep
+
+
+- see if i can place variables in the info.json file to use in corresponding
+- will have to use the integration tool to find the memory locations of the variables needed...
+- create code template first to run the game, random actions for 200 steps (after initial setup to load the game)
+- get sf2 (exact version) rom
+- buy the game
+
+
+i want to setup my own game, and it looks like sf2 genesis version is already setup, so play around with this, and then integrate sf2 gba version so i can say integrated this myself
+- still need to add the rom for sf2SCE
+ADDED
+- work in script and play around
