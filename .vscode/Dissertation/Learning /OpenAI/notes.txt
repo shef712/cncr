@@ -1,0 +1,187 @@
+*INTRODUCTION*
+
+Libretro is a simple API that allows for the creation of games and emulators.
+Gym Retro is a wrapper for video game emulator cores using the Libretro API to turn them into Gym environments.
+Gym Retro (GR) supports several consoles: Atari, Sega, NEC and Nintendo - including GBA and SNES.
+
+Each game will have files listing memory locations for:
+- in-game variables, 
+- reward functions based on those variables, episode and conditions,
+- savestates at the beginning of levels
+
+There is also a file containing hashes of ROMS that work with these files.
+
+Most of the ROMS will have to be self-obtained.
+
+
+*INSTALLATION*
+
+LINK: https://github.com/openai/retro/tree/develop
+
+Using along with Ubuntu 16.04, pre-packaged with pythin 3.5.2.
+
+Built first using commands:
+git clone --recursive https://github.com/openai/retro.git gym-retro
+cd gym-retro
+pip3 install -e .
+
+We can use a GR environment like we do a standard Gym enviornment.
+
+Installed the integration UI, which helps us easily find variables and configure the reward function for environments yet defined.
+
+Installed from source using commands (within the "gym-retro" folder created from building above):
+sudo apt-get install libcapnp-dev libqt5opengl5-dev qtbase5-dev
+cmake . -DBUILD_UI=ON -UPYLIB_DIRECTORY
+make -j$(grep -c ^processor /proc/cpuinfo)
+./gym-retro-integration
+
+The last command opens up the Integration UI while in the "gym-retro" folder.
+
+EXTRA: had to install "capnproto" and "libbz2-dev".
+
+
+*LEARNING*
+
+What environments are there?
+import retro
+retro.list_games()
+
+USA versions of ROMS are preferred.
+
+Non-commerical ROMs are included with Gym Retro for testing purposes. The provided ROMS can be found in tests/roms. May need to place other ROMS in here too to work with integration.
+
+We can import ROMs using "retro.import".
+This must place the ROMs in the path "tests/roms" or in the "environment" folder for the game - places in the stable game folder (environment folder).
+(TODO - DONE)
+python3 -m retro.import /path/to/your/ROMs/directory/
+
+
+What initial states are there?
+import retro
+for game in retro.list_games():
+    print(game, retro.list_states(game))
+
+While the ROMS are not provided, the states for many games are provided where stable games can be found in retro/data/stable.
+The "sorted" and "reject" folders seem to have been replaced by the "stable" and "experimental" folders.
+
+Use the Gym Retro Integration application and select the Integrate option from the File menu to begin working on integrating it.
+Will use https://github.com/openai/retro/blob/develop/IntegratorsGuide.md to work with the Integration application.
+
+Sometimes ROMs use different extensions, e.g. .gen for Genesis, .bin for Atari, etc. Rename the ROMs to use the aforementioned extensions in these cases. SEE list of ROM extensions.
+
+
+SEE random_agent.py for example code. We can work with the environment of a game once the states are sorted for the game. Not sure if we can use as a Gym normal environment when we use an integrated game, though there does seem to be a difference between using the environment as a normal Gym environment.(TODO).
+
+
+A typical structure for an environment in the retro/data/stable/[game] folder contains 5 files:
+- the state file gzipped
+Emulation allows the entire state of a game to be stored to disk and restored. These files are specific to the emulator but always end with ".state". These are identical to the versions used in the standalone versions of the emulators, but gzipped.
+Find out how to load different game states (TODO)
+Notice how "Sonic2-Genesis" has many different states.
+
+- metadata.json 
+Seems to contain the "default state" of the game. Linked to the state file within the folder.
+
+- rom.sha 
+"sha1sum is a computer program that calculates and verifies SHA-1 hashes. It is commonly used to verify the integrity of files". 
+This file must link the hashes of the ROM with the "environment" files.
+
+- data.json
+This JSON file contains the "ground-truth"/"hard" facts about the game, such as the locations and formats of variables in memory.
+For SF2, this would be enemy health or the timer.
+
+The "info" section contains game variables' memory addresses. Each entry consists of a key with the following values: memory address (address into a RAM array of the first byte of the variable) and the type (a type descriptor for this variable, see addendum: TYPE section for more info)
+
+
+- scenario.json
+Contains information defining reward functions and done conditions. These depend on variables defined in the info.json file. 
+
+Games can store information in memory in many various ways, and as such the specific information needed can vary in form too. The basic premise is that once a raw value is extracted from memory an operation may be defined to transform it to a useful form. Furthermore, we may want raw values in a given step or the deltas between two steps. Thus three properties are defined:
+    measurement = The method used for extracting the raw value. May be absolute for the current value and delta for the difference between the current and previous value. The default varies based on context.
+
+    op = The specific operation to apply to this value. Valid operations are defined below (e.g. positive: returns 1 if the value is positive, equal: returns 1 if the value is equal to the reference value, etc)
+    
+    reference = The reference value for an operation, if needed.
+
+
+"Each variable specified in the scenario file is multiplied by a reward value if positive and a penalty value if negative and then summed up to create the reward for that step." - so the game will look at all values defined by the reward section and calculate a reward based of the reward/penalty defined.
+
+The default measurement is delta. There is no default op, and by default the value is passed through raw.
+
+A value is calculated (e.g. defined the variable so "score"), multiplied by a coefficient (below is 1.0), then added to the reward function for this step.
+So for SF2, 
+"reward": {
+    "variables": {
+      "score": {
+        "reward": 1.0
+      }
+    }
+This means, it gives reward for every reward gained in this timestep (which is always >0, i think, cos score cant be lost in a game, just not gained), so if score is not gained, then no reward is given.
+CONFIRM
+There is no penalty defined, i guess a penalty for losing health and time going is something to think about including.
+
+"Similarly, states of these variables can be checked to see if the game is over." - the game checks the conditions that define a "done"
+
+At the top level the following property is available:
+condition: Specifies how the done conditions should be combined:
+    any: Any of the conditions in the done section is fulfilled. This is the default.
+    all: All of the conditions in the done section are fulfilled.
+
+In the variables subsection for "done", each calculates the "done" condition from the current state of memory.
+Each variable in the variables subsection is extracted per the op/measurement/reference values. 
+The default measurement is absolute (current value of variable). There is no default op, and by default the value is ignored.
+
+"continuetimer": {
+        "op": "equal",
+        "reference": 10
+      }
+So, for the "timer" variable, using the "equal" operation, if the variable is equal to 10, then done condition is true.
+
+
+ADDED to line 2 (new line)
+"condition": "all",
+BECAUSE we will have more than one done condition defined
+why isnt time = 0 defined as the done clause instead of time = 10?
+
+
+We can create states from the tool!
+- how does each game restart then? does this state get restarted somehow? does the game know how to get to this state automatically?
+= the system does not restart the game by itself, rather it is the game that handles restarting automatically because "arcade" mode is on, where the chosen champion goes around and fights all 12 characters
+a loss means our character fights the match again? confirm, either way another match is setup, though we could just define a end clause where three games lost is the end clause or something, will have to think about when is best to define an end clause, because the agent needs to train on many runs right?
+the "continue" time clock comes on, which could be a good done clause
+the last two numbers in the score seems to be no. of attempts minus by 1
+when the countdown goes to 0 there is an option to put your name in... dont want to deal with this, so i will probably put a done clause for losing, probably no penalty on this, because the last action used will be punished for it the most
+so the character will have to reload the game everytime he loses one match, and there is also a done clause when beating bison, so maybe some win clause or variable there to get
+
+a win means our character progress onto the next character, where a done clause needs to be defined for beating the boss too
+
+
+- it looks like the game ends when character loses anyway, so thats good, needs more testing
+
+- also, still need to think about frame skipping, because actions will not be properly rewarded if their actions have no effet because another action is still taking place
+apparently 20 frames, where rewards are "accumulated", for that action i guess...
+so what we'll do, is an action every 20 frames, done
+use a variable for this
+
+
+TODONOW
+- manipulate the info variable in code
+DONE
+- look into state and play as one character only for now
+(check what states are loaded while the random agent plays, is this always the same character or does it look random) 
+DONE (load state for each character in arcade mode)
+- need to use the UI tool and see if i can grab some variable (i will probably use it to find memory locations of variables i need, and play around with the other options, i wonder if defining the done condiiton in the tool edits the scenario file CHECK YES - it will save a JSON file like the data.json and scenario.json)
+- get some basic implementation of just movement (or even known combos like shoryukens and block only) to work and increase reward, movement only will probably work towards block too
+
+
+a "new" game integrated will get its own folder "contrib", where we can define some variables in my contribution version of the game environment (found in retro/data/contrib/)
+
+should define some variables, see what files get generated
+then look to get all variables needed
+
+then when the above is done, i will have to train a NN using these variables to define the agent, i.e. setup the NN, and see how it will rank actions based on the state, made up of the info variables...
+also will have to make sure the environment is set up correctly, with the done clauses are firing and stuff
+may have to fine tune the reward function too but we can play with this later
+
+-
+
