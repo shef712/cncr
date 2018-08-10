@@ -1,20 +1,4 @@
-TODO NOW:
-- read q learning article DONE
-- do cartpole (and/or another example!) in open ai gym using q learning (DOING cartpole, try and seperate the setup of the system and the actual RL part - if possible, just to make it more readable)
-
-[currently on 01:35 of https://www.youtube.com/watch?v=ViwBAK8Hd7Q&t=11s]
-
-- read deep q learning article
-- try and implement atari with it (use gym-retro if possible)
-- then think about implementation with streetfighter
-- setting up the system will probably be the hardest part im thinking, so do as much of this before tuesday at least, cos that why i can quickly do q-learning and do dqn later...
-
-----
-
-
 Reinforcement learning is an important type of Machine Learning where an agent learn how to behave in a environment by performing actions and receving rewards.
-
-
 
 
 The Reinforcement Learning (RL) process can be modelled as a loop that works like this:
@@ -23,14 +7,9 @@ The Reinforcement Learning (RL) process can be modelled as a loop that works lik
 -> Environment transitions to a new state S1. Environment gives some reward R1 to the agent.
 This RL loop outputs a sequence of state, action and reward.
 
-
-
-
-The goal of the agent is to maximize the expected cumulative reward. This the agent's goal because RLg is based on the idea of the reward hypothesis: "All goals can be described by the maximization of the expected cumulative reward".
+The goal of the agent is to maximize the expected cumulative reward. This the agent's goal because RL is based on the idea of the reward hypothesis: "All goals can be described by the maximization of the expected cumulative reward".
 
 Hence, in RL, we find the best behaviour by maximising expected cumulative reward.
-
-NOTE Surely reward is only defined from being state S1 after action A0, so we can either learn the value of the action A0, or learn the value of the state S1, and choose behaviour according to these values, hence the difference between action value and state value functions CHECK
 
 The "expected" cumulative reward at each timestep t (each RL loop) can be written as:
 
@@ -61,7 +40,7 @@ For each run/episode, the agent will get rewards for each action/state it experi
 
 2) Temporal Difference Learning - Estimate the rewards at each step.
 
-This method does not wait until the end of the episode and update the value ((maximum expected future reward)) for a state after each step.
+This method does not wait until the end of the episode and update the value (maximum expected future reward) for a state after each step.
 This method is called TS(0) which updates a value function after a single step.
 The estimated value is stepped closer to the TD target, which replaces the total cumulative reward G from the Monte Carlo method. 
 The TD target is obtained by combining the immediate reward and the discounted expected reward of the next state (so the next state the agent may be in after taking an action).
@@ -90,14 +69,14 @@ So depending on the actions taken through policy pi, we can calcualte an expecte
 
 We calculate the expected value given that we are in state s.
 
+NOTE Q-Learning is value based because it learns a value function, and it performs policy iteration in order to do this. It does not learn a new policy, though the policy will become optimal as it acts on optimal state value estimates.
+
 2) Policy Based
 Aims to directly optimise the policy function pi(s), without using a value function.
 The policy is what defines the agent's behaviour at a given time, such that 
 a = pi(s).
 
 We learn a policy function, which will allow the agent to map each state to the best corresponding action.
-
-NOTE Q-Learning is value based because it learns a value function, and it performs policy iteration in order to do this. It does not learn a new policy, though the policy will become optimal as it acts on optimal state value estimates.
 
 There are two types of policies:
 -> Deterministic: a policy at a given state has its action dictate according to the state.
@@ -111,17 +90,12 @@ Aims to model the environment, including the model of the behaviour of the envir
 
 
 
-Deep RL
--------
-Deep Reinforcement Learning introduces deep neural networks to solve Reinforcement Learning problems — hence the name “deep.”
-
-While tradition Q-Learning creates a Q table that holds the action-value(reward) for each state and action, i.e. q-value. Deep RL uses a NN to approximate the q-value.
+Policy Gradient (Value-Based)
+---------------
+Attempt to learn functions with directly map a state to an action, in order to find the best state to be in, i.e. learn the value of the state to be in, and performs an action to be in said state.
 
 
-
-
-
-Q-Learning
+Q-Learning (Value-Based)
 ----------
 NOTE max Q'(s', a') return the action with the highest q-value from this new state s'. The maximum action-value is always picked (no matter our policy, usually epsilon-greedy, though greedy policy would achieve act in the same way as this "max" term anyway), which is why Q-Learning is known as off-policy learning.
 https://www.quora.com/What-is-the-difference-between-Q-learning-and-SARSA-learning
@@ -139,24 +113,48 @@ Since those actions are state-dependent, what we are really gauging is the value
 The Q function takes as its input an agent’s state and action, and maps them to probable rewards.
 
 
-Deep Q-Learning Network (DQN)
------------------------------
+Q-Learning works by updating the expected cumulative reward of an action through experience of executing said action. From an intialised q-value table, as the agent traverses through a path from executing actions under a policy (probably epsilon-greedy), it will received a reward for each action in a state. 
+
+Q[state][act] += ALPHA*(reward + GAMMA*max_q_s1a1 - Q[state][act])
+
+Then, for each action it calculates the difference between the value of:
+the reward at the current timestep and the expected cumulative reward of the next action-state pair (under the greedy policy)
+AND 
+the current expected cumulative reward of the state
+it will then update this expected cumulative reward of the state by stepping through using the difference, since the reward + expected cumulative reward of the new state, is a better estimate of the reward of the current state
+THUS
+as the agent traverses many runs, it will have a q-table that will allow it behave optimally (if exploration and exploitiation is good, then the q-table will accurate and near complete!)
+
+EXAMPLES: see implementations for cartpole and frozenlake.
+
+
+Q-Network
+---------
 Q-Learning produces and updates a Q-table which an agent uses to find the best action to take given a state. But, producing this table can become ineffective in big state space environments, i.e. using a Q-learning function is not very scalable.
 
-Sf2 looks like a big state space environment, so maintaining a Q-table for an environment that has potentially millions of different states would not be efficient at all.
+While tradition Q-Learning creates a Q table that holds the action-value(reward) for each state and action, i.e. q-value. Q-Networks uses a NN that takes a state and approximates Q-values for each action available, based on that state.
 
-As a result, we'll create a Deep Q Neural Network to tackle this problem. Instead of using Q-table, this implements a NN that takes a state and approximates Q-values for each action based on that state.
+Using this model, we can create an agent to behave in complex environments. 
 
-So, the best idea is to create a neural network that will approximate a q-value for each action, given the state.
-
-Using this model, we can create an agent to behave in complex environments.
-
-DQN (Deep Q-Learning Network) == DQL (Deep Q-Learning)
-
-
-Neural networks are the agent that learns to map state-action pairs to rewards. 
+(Sf2 looks like a big state space environment, so maintaining a Q-table for an environment that has potentially millions of different states would not be efficient at all.)
 
 Like all neural networks, they use coefficients to approximate the function relating inputs to outputs, and their learning consists to finding the right coefficients, or weights, by iteratively adjusting those weights along gradients that promise less error.
+
+By acting as a function approximator, we can take any number of possible states that can be represented as a vector and learn to map them to Q-values.
+
+EXAMPLE: FrozenLake
+
+
+
+
+Deep RL
+-------
+Deep Reinforcement Learning introduces (deep) neural networks to solve Reinforcement Learning problems — hence the name “deep”.
+
+
+Deep Q-Learning Network (DQN)
+-----------------------------
+Uses a Convolutional Neural Network to approximate q-values.
 
 In reinforcement learning, convolutional networks can be used to recognize an agent’s state; e.g. the screen that Mario is on, or the terrain before a drone. That is, they perform their typical task of image recognition.
 
@@ -168,20 +166,3 @@ SO instead of numerous runs to update the Q-table, we would have numerous runs t
 Inputs: observation state
 (each layer of our CNN handles a certain variable?)
 Outputs: actions ranked
-
-
-MEETING 30th JULY
-
-create powerpoint in the morning to describe project properly
-then, think about whether we really need image classification in CNN's to work, surely we can just use observation data in some CNN format, maybe even just NN? ASK
-
-https://adeshpande3.github.io/A-Beginner%27s-Guide-To-Understanding-Convolutional-Neural-Networks/
-- describes how CNNs work, but i dont see how this supervised learning technique works with RL when we dont know the label (output value)
-WELL
-"a convolutional net can rank the actions possible to perform in that state"
-
-- i dont want to use DQN using images, surely i can use a CNN or NN with observations only, since they contain all variables to capture the current state, this shouldn't be massive either (x,y position of both characters, health bar, time and maybe a few more), we should be able to train a network to rank the best actions (from the button presses for mvoes) for this character, will need a network for each character i think
-
-DO I NEED A CNN TO DO THIS?
-Tbh i'm still not sure how to do this without actual outputs, so learn how the CNN ranks actions based on the state, and we will do it like this without images
-
