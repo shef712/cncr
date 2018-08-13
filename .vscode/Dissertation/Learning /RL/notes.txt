@@ -121,7 +121,7 @@ Then, for each action it calculates the difference between the value of:
 the reward at the current timestep and the expected cumulative reward of the next action-state pair (under the greedy policy)
 AND 
 the current expected cumulative reward of the state
-it will then update this expected cumulative reward of the state by stepping through using the difference, since the reward + expected cumulative reward of the new state, is a better estimate of the reward of the current state
+it will then update this expected cumulative reward of the state by stepping through using the difference, since the reward + expected cumulative reward of the new state, is a better (or atleast as good) estimate of the reward of the current state
 THUS
 as the agent traverses many runs, it will have a q-table that will allow it behave optimally (if exploration and exploitiation is good, then the q-table will accurate and near complete!)
 
@@ -132,7 +132,8 @@ Q-Network
 ---------
 Q-Learning produces and updates a Q-table which an agent uses to find the best action to take given a state. But, producing this table can become ineffective in big state space environments, i.e. using a Q-learning function is not very scalable.
 
-While tradition Q-Learning creates a Q table that holds the action-value(reward) for each state and action, i.e. q-value. Q-Networks uses a NN that takes a state and approximates Q-values for each action available, based on that state.
+Tradition Q-Learning creates a Q table that holds the action-value(reward) for each state and action, i.e. q-value. 
+Q-Networks uses a NN that takes a state and approximates Q-values for each action available, based on that state.
 
 Using this model, we can create an agent to behave in complex environments. 
 
@@ -142,7 +143,81 @@ Like all neural networks, they use coefficients to approximate the function rela
 
 By acting as a function approximator, we can take any number of possible states that can be represented as a vector and learn to map them to Q-values.
 
+Instead of discretizing the input space, which may seem like a pretty hacky solution to this problem that we’ll be encountering over and over in future situations, we can simply apply neural nets to the situation instead! That’s where the D in DQN comes from... i guess this term is interchangeable as long as we use NN in some form.
+
+
 EXAMPLE: FrozenLake
+
+Where our input to the network is the 1x16 vector, this is a one-hot vector indicating the position of the player. There are 16 possible states (so 16 possible inputs), which our network will use produce 4 Q-values, one for each possible action.
+
+One-hot vector is a vector with a single high (1) and all others low (0).
+
+The method of updating is a little different as well, instead of updating a table of q-values, the network will be using backpropagation and a loss function to update the weight connections between layers of the network.
+
+The cost function will be the "mean squared error" where the difference between the current predicted Q-values, and the "target" value is computed (as well as the gradiente of the error along the network).
+
+The predicted Q-value will be the q-value our network predicts the action will reward from the inputted state.
+
+The Q-target for an action is equivalent to the following equation:
+Q[state][act] += ALPHA*(reward + GAMMA*max_q_s1a1 - Q[state][act])
+
+THOUGH does this mean that the weight connection is only updated for the action taken, because we will only know the "immediate reward" for this action, and so we can update the weight connection associated with this action q-value.
+
+The cost function would then be:
+SUM (Q-target - Q)^2
+
+In a similar way, the Q-target will be the new best (or atleast good) estimate of the q-value for an action.
+
+SEE script_q_network.pay
+
+While the network learns to solve the problem, it is less efficient than standard Q-learning. The Q-network has many extensions to allow for better performance and more robust learning. Two particular extensions are "Experience Replay" and "Freezing Target Networks". 
+
+We will however move to using keras to setup our system, which we will see in the next example.
+
+
+EXAMPLE MountainCar
+
+Creating a Q-network will be difficult for certain environments because we can't necessarily generate training data for our NN to train on (i mean we can possibly run a random agent to gather some training data, but often it may not allow for convergence to optimal results).
+
+We have to figure out a way to incrementally improve upon previous trials, which is in line with what Q-networks are all about.
+
+The MSE (mean squared error) cost function will govern our network to train.
+
+SUM (Q-target - Q)^2
+=
+SUM (reward + GAMMA*max_q_s1a1  -  Q(s, a))
+
+which looks familiar from the standard q-learning update equation, we can see that the difference calculations in both equations are the same.
+
+Q represents the value estimated by our model given the current state "s" and action taken "a", we know the action by following our policy (probably epsilon-greedy).
+
+The network revolves around continuous learning, meaning that we do not need to accrue a bunch of training data and feed it into the model. Instead, training data is created through completign numerous trials.
+
+SEE MountainCar/DQN.py for annotations on implementation
+
+A key component of the DQN is the "memory" varaible (type deque) which is used to continuously train the model. However, rather than training on recent states the agent experiences, we add these states to memory and train on a random sample of that memory. 
+We do this, instead of using the last x timesteps as the sample, because the training would only learn from most recent actions and may not be directly relevant for future predictions.
+"In this environment in particular, if we were moving down the right side of the slope, training on the most recent trials would entail training on the data where you were moving up the hill towards the right. But, this would not be at all relevant to determining what actions to take in the scenario you would soon be facing of scaling up the left hill."
+So, taking random samples means we don't bias our training set and learn about acting in all states of the environment we would encounter equally well.
+
+Another key component in our DQN initialisationis the creation of the models. We create two models: the standard model and the target model. The target model is a "hack" implemented by DeepMind to improve convergence.
+
+The role of the standard model is of course, to make predictions of what action to take by estimating the q-value for each action, given the state.
+The target model tracks what action we "want" our model take.
+
+(
+But, how do we know what action we "want" the model to take, how is this defined(?) - well this network is in charge of retrieving the target values for the cost function in the standard model. This model in particular is in charge of calculate the atleast-as-accurate q-values after an action is completed (reward + discounted long term reward) we are able to use the standard model's predictions to update weights when compared to the target model's q-values, i.e. the target. Then, apply a slower weight but similar weight change to the target model, allowing our standard model to train while slowing adjusting it in the target model. Remember, the target model will have the up-to-date q-value after an action is taken, (ASSUME) so this will always be a better/good estimate for the q-value (therwise the standard model would be using wrong targets), but having the target model have a slower weight update in the same direction but lower magntiude of the standard model, will allow our standard model to settle on a target and converge, while the target model incorporates the change too.
+)
+
+For simple environments, convergence is usually possible, but for complex environments, due to training "on the fly" using a single network means we are essentially changing the "goal" at each timestep, i.e. the "optimum weights" that would mean optimum behaviour/action in this state would be different for each state and would change to quick.
+So divergence is because of the lack of clear direction in which to employ the optimiser, i.e. the target is changing for the inputs.
+So, we have a network that changes weights slower, we slow the change towards the goal that tracks our eventual goal (role of the target model), slow enough for us to be able to move along with it. Then we have another network that is trying to acheive those goals (role of the standard model).
+
+Training occurs in 3 main steps: remembering, learning and reorienting goals.
+
+1) remembering: add to the memory variable, this consists of the current state, action taken, reward for this action, the new state and the done condition
+
+2) train: the main body of the DQN, where we make use of the stored memory and actively learn from history. Start by taking a random sample of the memory. Remember, that our sample will be a certain size, called batch size. This will mean we use the set of inputs to train our network in batches. It will take batch_size number of random values from memory to train the network with.
 
 
 
@@ -163,6 +238,13 @@ But would there be a simpler way of just using actual game information from obse
 
 SO instead of numerous runs to update the Q-table, we would have numerous runs to update the weights of our network!
 
-Inputs: observation state
-(each layer of our CNN handles a certain variable?)
-Outputs: actions ranked
+
+
+
+AIM
+---
+
+Transfer Q-network setup to sf2, will have to do the following:
+1) enumerate actions and limit directional actions only
+2) get a better print statement of how our network is progressing
+3) use saved weights to load a network while rendering the environment
