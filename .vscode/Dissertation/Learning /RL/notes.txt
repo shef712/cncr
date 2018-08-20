@@ -239,12 +239,4 @@ But would there be a simpler way of just using actual game information from obse
 SO instead of numerous runs to update the Q-table, we would have numerous runs to update the weights of our network!
 
 
-
-
-AIM
 ---
-
-Transfer Q-network setup to sf2, will have to do the following:
-1) enumerate actions and limit directional actions only
-2) get a better print statement of how our network is progressing
-3) use saved weights to load a network while rendering the environment

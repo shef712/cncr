@@ -1,0 +1,124 @@
+TODO
+----
+*DONE*(1) enumerate all actions
+
+4 directional buttons
+2 down block (down+left and down+right)
+(don't need up-combo buttons because we can do diagonal jumps from consecutive horizontal and jumping button presses)
+TOTAL (DIRECTION = 6
+
+6 combat buttons (punches and kicks)
+combination of one directional and one combat button = 24
+TOTAL (COMBAT) = 30
+
+empty action (zero element array because doing nothing might be the best action)
+
+TOTAL(ALL) = 37 action arrays
+
+
+*DONE*(2) pre-process the data
+
+Range of values is 0 to 1, we can shift to -0.5 to 0.5 by subtracting the normalised values by 0.5.
+
+(4) position (x - start_position)/range_x 
+min x = 33554487, max x = 33554889, ground y = 192, peak-jump y = 122
+when jumping, the moment the character lands the x becomes higher than max_x
+when crouching, the x becomes lower than min_x
+so will have to manually handle these values
+
+(2) health / 176 (min <0, max 176)
+health can be negative so will truncate to 0
+
+(1) game clock / 99 (min 0, max 99)
+
+(4) jumping and crouching, either 0 or 1, for each player
+
+?(1) absolute difference in X and Y coorindates between players - LEAVE for now, will include if i have issues with convergence, need to start with as small as states as possible to speed up initial training
+
+Get initial values for each state variable
+# starting state of the sf2 environment (for all characters)
+start_info_state = [33554637, 192, 33554739, 192, 176, 176, 99, 0, 0]
+
+PROBLEM with returning the latest state from the memory, because this was pre-processed and i wasn't considering this. FIXED
+
+POSSIBLE remove the jumping state variable as the "y" state variable could capture this information
+POSSIBLE remove the health states because this agent shouldn't necessarily need to change how the agent would behave, though riskier actions if the health gap is significant could pose potential tactics, but leave for now
+AS A RESULT could only have 7 state variables only
+POSSIBLE remove the clock variable because the agent should not need to decide its actions based on time
+THOUGH these are variables that the human player would see, so i guess should be considered for that reason alone, will leave out for now to speed things up
+
+?(2) move ID for each player
+i can't get the enemy move ID since i am not controlling them in any way, and i can't get anything from the the RAM memory either, controlling the enemy through versus mode is not possible either since i can't access the second player actions through open ai's environment...
+- the agent will have to act without knowing the enemy's current move, the main problem with this is when the enemy is in the middle of a combat action or is doing a long-range attack, the agent will not consider this and act relentlessly
+- this wont be the biggest problem if we alter the reward function such that there is no penalty for being hit, so that it wont converge to always block and never hitting since it was getting penalised for being hit, could make an aggressiver agent if time was even included in the reward function with every second going a penalty
+- the agent will only use enemy position and jumping/crouching information to coordinate its actions, and essentially be an "all-attack" agent (i wonder if there would be a way to be "all-defend" and then combine the two networks?)
+- as long as we show it to be a worthwhile tactic and design decision in the report, this might not waylay the project too much
+- practicality it may not be amazing, since all out attack would mean that it learns the combos, and knows what moves to execute depending where the enemy is, but it will never block... unless it learns that i can execute its attacks quicker by not getting hit, and doing a combo after a successful block? theoretically yes, but would it ever block long range attacks then? maybe have some small penalty to play around with, if the player is hit, but probably not...
+STILL "agent_move_ID" may still prove to be important for the ability to execute combos within frame limits
+
+?(1) "move_repeat_n" which will indicate how many times the current move has been repeated, with the hope that the agent repeats moves for certain states,
+since there is a penalty for being hit, if a different action than the original is rewarded for hitting the enemy, then this would not quickly rectify because another action different to the crap original could get penalised or even rewarded if it was the original good action, all this would mess up the network training as the rewards/penalties are not accurately awarded
+SO i am not going to use this idea at all in fact, since it doesn't seem like it will converge
+POSSIBLE feed in last several actions indexes to get network to output an action that considers this? though this would be the state becoming that much longer, so don't think this will work, NO 
+
+
+3) decrease the network, start with one layer and a lower amount of neurons, need performance indicator though, with directional, see how long the character survives i guess - check if the character gets a negative reward for being hit
+
+4) will need to alter the reward function possibly, because it does not get a penalty for getting attacked (CONFIRM), and time needs to be included in this function, which i can do later
+
+5) get better indicators on how network is progressing in its training
+
+6) use saved weights to load a network while rendering the environment
+- check model is saved and loaded correctly, i.e. same weights
+- create a seperate method that will render with saved weights to visualise trained agent
+
+SUNDAY
+
+7) find a way for the agent to learn to repeat actions (assuming this is needed) to execute combat buttons, especially to execute complex attacks
+
+During a combat action, which takes more than one frame to complete, if we allow other actions to execute during this frame window of the original action, then we risk messing up our network because incorrect actions will be rewarded. So we need to make sure actions finish completely before stepping with another action.
+
+Similarly, when the current action is to jump the agent will start their jump in the following frame. During the 46 frames that a player is jumping, other actions can happen, but only one combat action is allowed, and all other presses will have no effect and we risk the same problem of other actions receiving incorrect rewards.
+
+The directional buttons don't affect this but this is understandable since these buttons (except for UP) can last a single frame in this setting, but we can define a minimum frame window to execute these actions, probably something low like 4-8 frames, so we hold the direction for 1/10 or 1/5 of a second, which should be be low enough to execute complex moves, will chose 4 to start off with as hadoukens work with this frame window for its directions. We seem to be running the game in 40fps (40 frames occur in 1 second of the game clock).
+We will also repeat the action and accumluate the reward for the frame window, which should be 0 mostly until the reward for hitting the enemy comes in one of the frames (if it does).
+
+We can the train the network after each action rather than each frame.
+We can't set a frame window and execute actions in these windows, because a constant frame window will be inelegible when a heavy kick takes 17+ frames to execute but we may need less for a combo to work, as well as these values differing with each character. 
+Each button press cannot be given a frame window because it differs with each character and move too, which i am not willing to do.
+Mainly, if we let the agent do other actions after the original action frame window, if the original action is not complete, which is likley to happen, then actions following the original would recieved incorrect rewards, until the original is actually finished (same problem we are used to about incorrectly training the network).
+
+CURRENT IDEA
+We can use the state variable "agent_combat_active" to determine when a combat action has been completed. This can ultimately determine when the agent is "active" in executing a combat action and 0 otherwise. 
+THIS will allow be to restrict movements at applicable times so the network is not misled.
+We can use "agent_jump" in a similar way to determine when the agent has finished jumping.
+As a result, we are able to execute a new action only when the last action has been completed, where hopefully, chaining combinational buttons should still be possible, since the start of the next combo will always be directional... if that makes sense
+NEEDS TO BE TESTED, but this variable gives valuable information to possibly solve this problem now!
+AS WELL AS "enemy_combat_active" provides more information that will possibly help the agent to block when the enemy is about to attack, where the position of the agent and enemy along with if the enemy is attacking should be a indicator of when to block.
+
+Jumping will have to be handled differently, because only one action is allowed during the 46 frames that a jump takes. Where an action could expire naturally while in the air (early action) and be interrupted when landing (late action), both have their benefits and are valid actions. Note, if the agent has done an early action, it is not allowed to do another action, even if there is enough frames to do so, so we should restrict actions until the agent is no longer jumping.
+TEST if agent_combat_active is 1 when an action has been done AND EXPIRED while in the air, which means we will not need to restrict actions while in the air since agent_combat_active is 1 CONFIRMED only when agent_y is returned to normal does agent_combat_active go down to 0, when it definitely expired much before the agent lands again
+
+
+ALTERNATIVE METHOD RULED OUT
+why could't we make an action last 20 frames? well because complex moves like hadoukens would not work, and if the action takes 17 frames, then surely it would refire on the 18th frame and mess everything up by being repeated.
+
+ALTERNATIVE
+Give an action at every 20 frames, which would work because a move doesnt last more than 20 frames, so we could step a new action at every 20 seconds, though this would not work for 
+
+NOTE we tested fps of our env (1 second in game clock) with:
+# print("timestep = ", step, ", clock = ", info["clock"])
+
+MONDAY
+
+---
+
+8) run random agent and use this as a comparison to our agent, can do this for directional actions too
+
+9) come up with a research question, e.g. the effect of this variable or method on this environemnt, possibly applyong DQN on a complex environment sf2, or even just a interesting variable in sf2 that may increase convergence (if possible)
+
+TUESDAY (email morteza and show progress and all work done above, for info and for update)
+
+BELOW (BONUS)
+
+10) RELATED to 7 but may not be needed, look at atari examples for frame skipping, the reccurent network may be implemented (which may not be a problem because of keras), look into using keras functional for the NN layers

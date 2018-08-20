@@ -37,7 +37,7 @@ class DQN:
         self.model        = self.create_model()
         self.target_model = self.create_model()
 
-    # returns a model from our structured network
+    # returns a newly created model from our structured network
     def create_model(self):
         # create the model
         model   = Sequential()
@@ -51,6 +51,7 @@ class DQN:
         model.add(Dense(24, activation="relu"))
         # output neuron for each        
         model.add(Dense(self.env.action_space.n))
+        # If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
 
         # compile the model, using MSE cost function and gradient descent with learning rate
         model.compile(loss="mean_squared_error",
@@ -144,6 +145,7 @@ def main():
         # get starting (current) state/observation from resetting the environment
         # the state is in the format (1x2) which i thought was default anyway...
         cur_state = env.reset().reshape(1,2)
+        # reset the environment for each each trial, to beginning state of environment
 
         for step in range(trial_len):
             # for each timestep, we determine what action to take by taking the maximum q-value from the given state
@@ -176,7 +178,7 @@ def main():
         # if the agent (network) fails to retrieve weights that solve the environment (mountain car reaching the flag) in a trial within 199 steps, then it counts as a fail
         if step >= 199:
             print("Failed to complete in trial {}".format(trial))
-            # save the network, usually when the trial length is at 500, so saves while it learns, so we do not need to start from scratch if training takes a while (should get some indicator of how well the agent is doing while running though)
+            # save the network while it learns, so we do not need to start from scratch if training takes a while (should get some indicator of how well the agent is doing while running though), should this be trial instead of step
             if step % 10 == 0:
                 print("saving failed trial's model")
                 dqn_agent.save_model("saved_models/trial-{}.model".format(trial))
