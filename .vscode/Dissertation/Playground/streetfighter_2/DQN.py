@@ -10,7 +10,7 @@ from collections import deque
 gym.logger.set_level(40)
 
 actions = [
-    # directions only
+    # directions action
     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
@@ -18,7 +18,7 @@ actions = [
     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
 
-    # combat only
+    # combat action
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -26,37 +26,7 @@ actions = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     
-    # direction + combat
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
-    
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
-    
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-    
-    [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    
-    [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-    
+    # empty action
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 intial_state = [0.373134328, 1, 0.626865672, 1, 0, 0, 0, 0]
@@ -204,7 +174,7 @@ def main():
     env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Versus.RyuVsKen')
 
     trials  = 5 # 1000
-    trial_len = 500 # 500
+    trial_len = 50 # 500
 
     min_frame_window = 4
     max_frame_window = 40
@@ -214,16 +184,66 @@ def main():
         cur_state = env.reset()
         cur_state = (np.array(intial_state)).reshape(1, 8)
 
-        for step in range(trial_len):
-            env.render()
+        # start off a new trial with a ready agent
+        agent_active = 0
+
+        for action_step in range(trial_len):
+            # env.render()
+
+            # for each new action we want to step through, for each action_step, the agent will be ready for a new action because "agent_active" will be 0, so no need ot reset it when it will be reset naturally
+            # for when we want to do a new action step, we get the new action from our network
+            # we should check if it is directionl or combat, assume combat for now
+            # we will need to step through one observation to get the value agent_combat_active to be true, or we can just set it ourselves because we know that a new action has just been given (and a directional would have to have at least four frames anyway which we can count)
+            # we will step through the first frame with the new action, and get the reward for said reaction, and continue to step with the same action array, until agent_combat_active is false, or the min_frame_window as passed for direcitonal button
+            # in which case we will have accumulated the reward (the reward is given over one frame while agent active anyway so it wont be a crazy high reward anyway)
+            # once the agent is not active anymore, we will escape the while loop, train and network with action and reward and the last state, which will essentially treat the last x frames as one state (hopefully any moves that move the player far away and change the enemy x won't have a big impact...)
+
             action = dqn_agent.act(cur_state)
             action_array = actions[action]
+            agent_active = 1
 
-            new_state, reward, done, info = env.step(action_array)
-            # get pre-processed state
-            new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,8)
+            agent_directional_active = 0
+            agent_combat_active = 1
+            if (0 < action and action < 5) or action == 12:
+                agent_directional_active = 1
+            else: 
+                agent_combat_active = 1
 
-            dqn_agent.remember(cur_state, action, reward, new_state, done)
+            frame_count = 1
+            total_action_reward = 0
+
+            # action selected = heavy kick
+            # so agent is now made active
+            # if it takes 17 frames for the heavy kick to execute
+            # we can repeat the action for 17 frames, or even safer do the empty action, because i am worried that the heavy kick might repeat, and as long as we pass in the kick action into the network, then the empty action for one frame won't affect it
+            # still, if we executing the heavy kick for 17 frames, it will be made non-active in the result frame, so new_state will have agent_comabt_active = 0
+            # so we should not need to do all that above, okay
+
+            while agent_active:
+                new_state, reward, done, info = env.step(action_array)
+                new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,8)
+                agent_combat_active = new_state[6]
+
+                if agent_directional_active:
+                    framecount += 1
+                    if frame_count > min_frame_window:
+                        # no more frames to repeat directional action now
+                        agent_active = 0
+                elif not agent_combat_active:
+                    # no more frames to wait for combat action to repeat now
+                    agent_active = 0
+                
+                # we still care about the reward at the frame where agent is nonactive, because it moved from active to non-active, and the move has just finsihed
+                total_action_reward += reward
+
+            # we care about the state of the env as soon as the agent executed the move, for example, if the agent had just began to do a hadouken, and the player jumped over it and the enemy is close enough to jump and attack, all while the hadouken is firing and our agent can't attack then 
+
+            # what happens when we do try and do actions while hit in some long ass combo, wont the actions be given penalties because of being hit! will only let score be the reward for, in that case, just to get some immediate results
+
+            # we also care about the resulting state of said action
+            # so basically we are skipping the states of the frames it takes to execute an action, with the minimum being 4 frames, though a combat action could take less than 4... well leave directional as 4 anyway
+
+            dqn_agent.remember(cur_state, action, total_action_reward, new_state, done)
             dqn_agent.replay()
             dqn_agent.target_train()
 

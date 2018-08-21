@@ -47,6 +47,10 @@ AS A RESULT could only have 7 state variables only
 POSSIBLE remove the clock variable because the agent should not need to decide its actions based on time
 THOUGH these are variables that the human player would see, so i guess should be considered for that reason alone, will leave out for now to speed things up
 
+WELL how many states is too many, i mean surely a NN is capable of several input elements...
+
+
+IGNORE
 ?(2) move ID for each player
 i can't get the enemy move ID since i am not controlling them in any way, and i can't get anything from the the RAM memory either, controlling the enemy through versus mode is not possible either since i can't access the second player actions through open ai's environment...
 - the agent will have to act without knowing the enemy's current move, the main problem with this is when the enemy is in the middle of a combat action or is doing a long-range attack, the agent will not consider this and act relentlessly
@@ -56,6 +60,7 @@ i can't get the enemy move ID since i am not controlling them in any way, and i 
 - practicality it may not be amazing, since all out attack would mean that it learns the combos, and knows what moves to execute depending where the enemy is, but it will never block... unless it learns that i can execute its attacks quicker by not getting hit, and doing a combo after a successful block? theoretically yes, but would it ever block long range attacks then? maybe have some small penalty to play around with, if the player is hit, but probably not...
 STILL "agent_move_ID" may still prove to be important for the ability to execute combos within frame limits
 
+IGNORE
 ?(1) "move_repeat_n" which will indicate how many times the current move has been repeated, with the hope that the agent repeats moves for certain states,
 since there is a penalty for being hit, if a different action than the original is rewarded for hitting the enemy, then this would not quickly rectify because another action different to the crap original could get penalised or even rewarded if it was the original good action, all this would mess up the network training as the rewards/penalties are not accurately awarded
 SO i am not going to use this idea at all in fact, since it doesn't seem like it will converge
@@ -93,23 +98,48 @@ We can use the state variable "agent_combat_active" to determine when a combat a
 THIS will allow be to restrict movements at applicable times so the network is not misled.
 We can use "agent_jump" in a similar way to determine when the agent has finished jumping.
 As a result, we are able to execute a new action only when the last action has been completed, where hopefully, chaining combinational buttons should still be possible, since the start of the next combo will always be directional... if that makes sense
-NEEDS TO BE TESTED, but this variable gives valuable information to possibly solve this problem now!
+NEEDS TO BE TESTED, but this variable gives valuable information to possibly solve this problem now! TESTED and works consistently
 AS WELL AS "enemy_combat_active" provides more information that will possibly help the agent to block when the enemy is about to attack, where the position of the agent and enemy along with if the enemy is attacking should be a indicator of when to block.
 
 Jumping will have to be handled differently, because only one action is allowed during the 46 frames that a jump takes. Where an action could expire naturally while in the air (early action) and be interrupted when landing (late action), both have their benefits and are valid actions. Note, if the agent has done an early action, it is not allowed to do another action, even if there is enough frames to do so, so we should restrict actions until the agent is no longer jumping.
 TEST if agent_combat_active is 1 when an action has been done AND EXPIRED while in the air, which means we will not need to restrict actions while in the air since agent_combat_active is 1 CONFIRMED only when agent_y is returned to normal does agent_combat_active go down to 0, when it definitely expired much before the agent lands again
 
 
-ALTERNATIVE METHOD RULED OUT
+ALTERNATIVE - NO
 why could't we make an action last 20 frames? well because complex moves like hadoukens would not work, and if the action takes 17 frames, then surely it would refire on the 18th frame and mess everything up by being repeated.
-
-ALTERNATIVE
-Give an action at every 20 frames, which would work because a move doesnt last more than 20 frames, so we could step a new action at every 20 seconds, though this would not work for 
+ALTERNATIVE - NO
+Give an action at every 20 frames, which would work because a move doesnt last more than 20 frames, so we could step a new action at every 20 seconds, though this would not work for complex moves that need directional input beforehand.
 
 NOTE we tested fps of our env (1 second in game clock) with:
 # print("timestep = ", step, ", clock = ", info["clock"])
 
-MONDAY
+
+IMPLEMENTATION ->
+we can change trial_length to count the number of actions, instead of number of timesteps/frames
+so if trial_len = 500, we will be executing 500 actions in a trial
+note, we will still be stepping through the environment at every frame, but will wait until either the agent is no longer active or min_frame_window amount of frames has been stepped through, and only then wlll the next action be undertaken,
+a direction button will for a min_frame_window, 
+NOTE we don't need to handle UP seperately because after min_frame_window frames another action can be made availble since agent_combat_active will be 0, and the combat_active will automatically last when an action is taken, which will last until the player lands straight up again
+we will need to have a for loop to step through the environment, which means we will be running trial_len * total_frames_to_finish_all_actions... which will be a lot of frames since min_frame_window is 5, so 2000 frames minimum right now... will start off with 50 actions per trial
+as the for-loop steps through the environment, it will accumulate the reward, which will usually equal 0 until the one frame where the enemy would be hit (where some combat presses live a standing heavy kick will do two kicks hits and thus the accumulation of reward will be come mainly from both frames in the total amount of frames for this action, which is fine)
+QUESTION how will a complex action be given a reward, because surely the last action will be given the reward if it is in some certain state, i mean, if we are doing a hadouken, the last button press is a punch button, so for a certain state, it will do a normal punch rather than the directional buttons beforehand needed to do the hadouken that actually got the reward 
+SO the state needs to include some idea of the last few moves done (i.e. directional buttons) to output the hadouken when the delta_position is high, rather than just an ordinary punch, which it will do in the current state definition that doesn't include the previous moves
+ANSWER will include the last 3 moves pressed...
+ALTHOUGH this will not chain complex moves together, but hopefully it will do the most powerful moves in these situations, so a shoryuken if the enemy is right next to agent, rather than a light punch
+THEN providing a more previous moves would mean the agent is capable of complex combos hopefully, including super move (which may require the "meter" variable, will do if there is time)
+
+If we are going to provide the last 3 indexes of the agent's actions (probably normalised too by diving by actions_n), the NN will consider this by updating the reward of the state with the 3 actions taken in the past, such that if the agent is in that state once more, it will eventually know that a punch would be beneficial if the delta_position is high, both players are standing, and the last 3 actions were the directional buttons to perform the hadouken.
+How will the first 3 actions provide input to the NN when there are not 3 actions to use as input? Can't very well put empty-action cos this will mess up the network training if the 4 action hits. I guess, we can just use our model to predict actions for the first 3 actions, but not actually train with it, then that way the 4th actions will use reliable actions (especially if the NN is already outputting actions that have accurate q-values already), so the first 3 actions do not aid in training basically, thats fine
+
+NOTE passing in the last 4 states to the network is what the atari solution does, so if it looks like training isn't too bad with a minimised state length, then try this to see if there is improved performance OR if convergence doesn't look good even with full state variables, then maybe passing in last 4 could help
+
+NOTE remember to alter hyper parameters to see if convergence is improved in any way
+
+NOTE do i need combinational buttons? this would just mean i need fewer previous moves pressed if we combine the last directional with the combat, but single buttons seem to give better performance for the hadouken, and it would mean a lot less action outputs... one more input state variable though, try both! Empty action would only be useful if our reward function reward for maintaining the health gap, which would be could for early game? or if the agent's health was lower and it should be defensive...
+
+Remember the current reward function gives reward for score only.
+
+TUESDAY 
 
 ---
 
@@ -117,8 +147,63 @@ MONDAY
 
 9) come up with a research question, e.g. the effect of this variable or method on this environemnt, possibly applyong DQN on a complex environment sf2, or even just a interesting variable in sf2 that may increase convergence (if possible)
 
-TUESDAY (email morteza and show progress and all work done above, for info and for update)
+WEDNESDAY (email morteza and show progress and all work done above, for info and for update)
 
-BELOW (BONUS)
+BELOW (BONUS) - IGNORE
 
 10) RELATED to 7 but may not be needed, look at atari examples for frame skipping, the reccurent network may be implemented (which may not be a problem because of keras), look into using keras functional for the NN layers
+
+
+
+ARCHIVE
+-------
+
+# actions = [
+#     # directions only
+#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+
+#     # combat only
+#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+#     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    
+#     # direction + combat
+#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+    
+#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+    
+#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    
+#     [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+#     [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+#     [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+#     [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+#     [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+#     [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+#     [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+#     [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+#     [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+#     [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+#     [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+    
+#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
