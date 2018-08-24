@@ -22,11 +22,13 @@ def main():
     # hadouken did well with max frame wait of 6
 
     #frame_wait = 18
-    frame_wait = 4
+    frame_wait = 20
     start_frame = 80
 
     wait_time = 80
     repeated_time = 0
+
+    agent_combat_active = 0
 
     while True:
         # B = medium kick, A = light kick, C = heavy kick
@@ -35,7 +37,7 @@ def main():
         # where [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0] = low heavy kick
         
         # hadouken
-        actions = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]]   
+        # actions = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]]   
         # actions = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0]]   
         # shoryuken    
         # actions = [[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]]    
@@ -74,39 +76,34 @@ def main():
         #     done = True
 
         if time % 1 == 0:
-            if time <= start_frame:
-                action = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            elif time > start_frame and time <= (start_frame + frame_wait):
-                action = actions[0]
-            elif time > (start_frame + frame_wait) and time <= (start_frame + (frame_wait*2)):
-                action = actions[1]
-            elif time > (start_frame + (frame_wait*2)) and time <= (start_frame + (frame_wait*3)):
-                action =  actions[2]
-            elif time > (start_frame + (frame_wait*3)) and time <= (start_frame + (frame_wait*4)):
-                action =  actions[3]
-            elif time > (start_frame + (frame_wait*4)):
-                action = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                time = -1*wait_time
-                repeated_time += 1
-
             # if time <= start_frame:
             #     action = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             # elif time > start_frame and time <= (start_frame + frame_wait):
-            #     # action = [0,0,0,0, 1,0,0,0,0,0,0,0]
-            #     action = [0,0,0,0,1,0,0,1,0,0,0,0]
-            # elif time > (start_frame + (frame_wait)) and time <= (start_frame + (frame_wait*2)):
-            #     action = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
-            # elif time > (start_frame + (frame_wait*2)):
+            #     action = actions[0]
+            # elif time > (start_frame + frame_wait) and time <= (start_frame + (frame_wait*2)):
+            #     action = actions[1]
+            # elif time > (start_frame + (frame_wait*2)) and time <= (start_frame + (frame_wait*3)):
+            #     action =  actions[2]
+            # elif time > (start_frame + (frame_wait*3)) and time <= (start_frame + (frame_wait*4)):
+            #     action =  actions[3]
+            # elif time > (start_frame + (frame_wait*4)):
             #     action = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             #     time = -1*wait_time
             #     repeated_time += 1
+            
+            if time <= start_frame:
+                action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+            elif time > start_frame and time <= start_frame*2:
+                action = [0,0,0,0, 0,0,0,0, 1,0,0,0]
+            elif time > start_frame*2:
+                repeated_time += 1
 
-            print ("time = ", time, " ", action)
             observation, reward, done, info = env.step(action)
-            print("agent_combat_active = ", info["agent_combat_active"], ", agent_y", info["agent_y"])
+            print ("time = ", time, ", agent_combat_active = ", info["agent_combat_active"])
+
         env.render()
 
-        if repeated_time == 20:
+        if repeated_time == 2:
             done = True
 
         #total_reward += reward

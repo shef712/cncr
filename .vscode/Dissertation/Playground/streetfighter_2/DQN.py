@@ -3,9 +3,12 @@ import retro
 import numpy as np
 import random
 from keras.models import Sequential
+from keras.models import load_model
 from keras.layers import Dense, Dropout
 from keras.optimizers import Adam
 from collections import deque
+import matplotlib.pyplot as plt 
+import math 
 
 gym.logger.set_level(40)
 
@@ -29,7 +32,8 @@ actions = [
     # empty action
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
-intial_state = [0.373134328, 1, 0.626865672, 1, 0, 0, 0, 0]
+normalised_empty_action = 12/len(actions)
+intial_state = [0.373134328,1,0.626865672,1, 176,176, 0,0,0,0, 0.253731344,1, 0,0, normalised_empty_action,normalised_empty_action,normalised_empty_action]
 
 class DQN:
     def __init__(self, env):
@@ -51,10 +55,16 @@ class DQN:
     def create_model(self):
         model = Sequential()
         state_n = len(intial_state)
-        model.add(Dense(24, input_dim=state_n, activation="relu"))
-        model.add(Dense(48, activation="relu"))
-        model.add(Dense(24, activation="relu"))
-        model.add(Dense(len(actions[:6])))
+
+        model.add(Dense(9, input_dim=state_n, activation="relu"))
+
+        # model.add(Dense(24, input_dim=state_n, activation="relu"))
+        # model.add(Dense(48, activation="relu"))
+        # model.add(Dense(24, activation="relu"))
+
+        # model.add(Dense(len(actions[:6])))
+
+        model.add(Dense(len(actions)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
         return model
@@ -91,7 +101,8 @@ class DQN:
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
-            return random.randint(0,len(actions[:6])-1)
+            # return random.randint(0,len(actions[:6])-1)
+            return random.randint(0,len(actions) - 1)
         return np.argmax(self.model.predict(state)[0])
 
     def save_model(self, fn):
@@ -134,21 +145,25 @@ class DQN:
         memory_enemy_x = False
         # clean up
         if agent_x < min_x or agent_x > max_x:
+            memory_agent_x = True
             if (len(self.memory) == 0):
                 agent_x = intial_state[0]
             else:
                 agent_x = self.memory[-1][0][0][0]
-                memory_agent_x = True
         if enemy_x < min_x or enemy_x > max_x:
+            memory_enemy_x = True
             if (len(self.memory) == 0):
                 enemy_x = intial_state[2]
             else:
-                agent_x = self.memory[-1][0][0][2]
-                memory_enemy_x = True
-        if agent_health < 0:
+                enemy_x = self.memory[-1][0][0][2]
+
+        if agent_health < min_health:
             agent_health = min_health
-        if enemy_health < 0:
+        if enemy_health < min_health:
             enemy_health = min_health
+        if clock > max_clock:
+            clock = max_clock
+
         if agent_combat_active == 512:
             agent_combat_active = 0
         elif agent_combat_active == 513:
@@ -167,99 +182,205 @@ class DQN:
         enemy_health = enemy_health / max_health
         clock = clock / max_clock
 
-        # return state
-        return [agent_x, agent_y, enemy_x, enemy_y, agent_crouch, enemy_crouch, agent_combat_active, enemy_combat_active]
+        absolute_diff = math.sqrt( ((agent_x - enemy_x)**2) + ((agent_y - enemy_y)**2) )
+
+        return [agent_x, agent_y, enemy_x, enemy_y, 
+        agent_health, enemy_health, 
+        agent_jump, enemy_jump, agent_crouch, enemy_crouch, 
+        absolute_diff, clock, 
+        agent_combat_active, enemy_combat_active, 
+        0, 0, 0]
     
-def main():
-    env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Versus.RyuVsKen')
+def train_network():
+    env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.Ryu')
 
-    trials  = 5 # 1000
-    trial_len = 50 # 500
+    trials  = 100 # 10000
 
-    min_frame_window = 4
+    min_frame_window = 20
     max_frame_window = 40
+    
+    max_actions = 10000
+    penalty = -5000
+
+    total_rewards = []
 
     dqn_agent = DQN(env=env)
     for trial in range(trials):
         cur_state = env.reset()
-        cur_state = (np.array(intial_state)).reshape(1, 8)
+        cur_state = (np.array(intial_state)).reshape(1, 17)
 
-        # start off a new trial with a ready agent
-        agent_active = 0
+        actions_memory = [normalised_empty_action, normalised_empty_action, normalised_empty_action]
 
-        for action_step in range(trial_len):
-            # env.render()
+        cur_agent_health = 176
 
-            # for each new action we want to step through, for each action_step, the agent will be ready for a new action because "agent_active" will be 0, so no need ot reset it when it will be reset naturally
-            # for when we want to do a new action step, we get the new action from our network
-            # we should check if it is directionl or combat, assume combat for now
-            # we will need to step through one observation to get the value agent_combat_active to be true, or we can just set it ourselves because we know that a new action has just been given (and a directional would have to have at least four frames anyway which we can count)
-            # we will step through the first frame with the new action, and get the reward for said reaction, and continue to step with the same action array, until agent_combat_active is false, or the min_frame_window as passed for direcitonal button
-            # in which case we will have accumulated the reward (the reward is given over one frame while agent active anyway so it wont be a crazy high reward anyway)
-            # once the agent is not active anymore, we will escape the while loop, train and network with action and reward and the last state, which will essentially treat the last x frames as one state (hopefully any moves that move the player far away and change the enemy x won't have a big impact...)
+        total_reward = 0
+        action_step = 0
+        rounds_won = 0
+        done = False
+        while True:
+            env.render()
 
             action = dqn_agent.act(cur_state)
             action_array = actions[action]
+            
             agent_active = 1
+            frame_count = 0
+            total_action_reward = 0
 
             agent_directional_active = 0
-            agent_combat_active = 1
-            if (0 < action and action < 5) or action == 12:
+            agent_combat_active = 0
+            if (0 <= action and action < 6) or action == 12:
                 agent_directional_active = 1
             else: 
                 agent_combat_active = 1
 
-            frame_count = 1
-            total_action_reward = 0
-
-            # action selected = heavy kick
-            # so agent is now made active
-            # if it takes 17 frames for the heavy kick to execute
-            # we can repeat the action for 17 frames, or even safer do the empty action, because i am worried that the heavy kick might repeat, and as long as we pass in the kick action into the network, then the empty action for one frame won't affect it
-            # still, if we executing the heavy kick for 17 frames, it will be made non-active in the result frame, so new_state will have agent_comabt_active = 0
-            # so we should not need to do all that above, okay
-
+            new_clock = 0
             while agent_active:
+                env.render()
+                frame_count += 1
+
                 new_state, reward, done, info = env.step(action_array)
-                new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,8)
-                agent_combat_active = new_state[6]
+                new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,17)
+                agent_combat_active = new_state[0][6]
+                new_clock = info["clock"]
+                new_agent_health = info["agent_health"]
+                rounds_won = info["agent_matches_won"]
+                done = info["continuetimer"] > 0
+                if done:
+                    break
+
+                total_action_reward += reward
+                # if not reward == 0:
+                    # print("reward = ", reward)
 
                 if agent_directional_active:
-                    framecount += 1
-                    if frame_count > min_frame_window:
-                        # no more frames to repeat directional action now
+                    if frame_count == min_frame_window:
                         agent_active = 0
                 elif not agent_combat_active:
-                    # no more frames to wait for combat action to repeat now
                     agent_active = 0
+
+            for taken_action in range(3, 0, -1):
+                new_state[0][-taken_action] = actions_memory[-taken_action]
+            actions_memory.append(action/len(actions))
+            
+            if cur_agent_health > new_agent_health:
+                # print("PENALTY! Agent health is now:", new_agent_health)
+                cur_agent_health = new_agent_health
+                total_action_reward = total_action_reward - penalty
+
+            # print("--- STEP ", action_step, "(", action_array , "), TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
+            
+            if new_clock > 0 and (agent_directional_active or agent_combat_active) and not done:
+                print("TRAINING at --- STEP ", action_step)
+                dqn_agent.remember(cur_state, action, total_action_reward, new_state, done)
+                dqn_agent.replay()
+                dqn_agent.target_train()
+
+            if not done:
+                delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+                _, _, done, _ = env.step(delay_action)
                 
-                # we still care about the reward at the frame where agent is nonactive, because it moved from active to non-active, and the move has just finsihed
-                total_action_reward += reward
+            print("done = ", done)
+            done = True if action_step >= max_actions else done
 
-            # we care about the state of the env as soon as the agent executed the move, for example, if the agent had just began to do a hadouken, and the player jumped over it and the enemy is close enough to jump and attack, all while the hadouken is firing and our agent can't attack then 
-
-            # what happens when we do try and do actions while hit in some long ass combo, wont the actions be given penalties because of being hit! will only let score be the reward for, in that case, just to get some immediate results
-
-            # we also care about the resulting state of said action
-            # so basically we are skipping the states of the frames it takes to execute an action, with the minimum being 4 frames, though a combat action could take less than 4... well leave directional as 4 anyway
-
-            dqn_agent.remember(cur_state, action, total_action_reward, new_state, done)
-            dqn_agent.replay()
-            dqn_agent.target_train()
-
-            cur_state = new_state
             if done:
                 break
-        
-        if step >= 199:
-            print("Failed to complete in trial {}".format(trial))
-            if trial % 10 == 0:
-                print("Saving failed trial model")
-                dqn_agent.save_model("saved_models/trial-{}.model".format(trial))
-        else:
-            print("Completed in {} trials".format(trial))
-            dqn_agent.save_model("saved_models/success.model")
-            break
+            
+            cur_state = new_state
+            action_step += 1
+            total_reward += total_action_reward
+
+        print("Trial ", trial, ", rounds won = ", rounds_won, ", total_reward = ", total_reward)
+        total_rewards.append(total_reward)
+        if trial % 100 == 0:
+            dqn_agent.save_model("saved_models/ryu-trial-{}.model".format(trial))
+
+    dqn_agent.save_model("saved_models/ryu.model")
+    plot_running_avg(total_rewards)
+
+def show_network():
+    env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.Ryu')
+
+    dqn_agent = DQN(env=env)
+    dqn_agent.load_model("saved_models/ryu-trial-600.model")
+
+    trials  = 1
+
+    min_frame_window = 10
+    max_frame_window = 40
+
+    max_actions = 10000
+
+    dqn_agent = DQN(env=env)
+    for trial in range(trials):
+        cur_state = env.reset()
+        cur_state = (np.array(intial_state)).reshape(1, 17)
+
+        actions_memory = [normalised_empty_action, normalised_empty_action, normalised_empty_action]
+
+        action_step = 0
+        while True:
+            env.render()
+
+            action = dqn_agent.act(cur_state)
+            action_array = actions[action]
+            
+            agent_active = 1
+            frame_count = 0
+            total_action_reward = 0
+
+            agent_directional_active = 0
+            agent_combat_active = 0
+            if (0 <= action and action < 6) or action == 12:
+                agent_directional_active = 1
+            else: 
+                agent_combat_active = 1
+
+            while agent_active:
+                env.render()
+                frame_count += 1
+
+                new_state, reward, done, info = env.step(action_array)
+                new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,17)
+                agent_combat_active = info["agent_combat_active"]
+
+                total_action_reward += reward
+
+                if agent_directional_active:
+                    if frame_count == min_frame_window:
+                        agent_active = 0
+                elif not agent_combat_active:
+                    agent_active = 0
+
+            for taken_action in range(3, 0, -1):
+                new_state[0][-taken_action] = actions_memory[-taken_action]
+            actions_memory.append(action/len(actions))
+
+            # print("--- STEP ", action_step, " TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
+
+            done = True if action_step >= max_actions else done
+
+            if done:
+                break
+            else:
+                delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+                env.step(delay_action)
+                if done:
+                    break 
+
+            cur_state = new_state
+            action_step += 1
+            
+def plot_running_avg(totalrewards):
+	N = len(totalrewards)
+	running_avg = np.empty(N)
+	for t in range(N):
+		running_avg[t] = np.mean(totalrewards[max(0, t-100):(t+1)])
+	plt.plot(running_avg)
+	plt.title("Running Average")
+	plt.show()
 
 if __name__ == "__main__":
-    main()
+    train_network()
+
+    # show_network()
