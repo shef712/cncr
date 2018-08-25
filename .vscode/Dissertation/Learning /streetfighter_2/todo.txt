@@ -161,70 +161,38 @@ CHANGED scenario.json to cause a "done" on "continuetimer" = 9 INSTEAD of 10
 ---
 THINGS to change if convergence isn't great:
 - number of neurons and/or layers
+= using a one-layer network of 9 neurons, this should be good enough
+
 - hyperparameter values
-- reward function (e.g. add penalties for losing health; penalty for every clock second lost if health was lower than enemy (to help against "time-out"; use difference in health as reward where equal more health is reward and negative different is penalty, where every frame/action that the health gap is negative it would get the negative reward relative to this gap, which would would tackle the "time-out" problem)
-- modifying (probably adding to give more information to agent) state variables = adding in the last 4 states as a extreme
-- adding in previous move indexes (normalised of course), last 4 to start off with, but the super moves and the more complex combos will require more... (ryu's highest combo is 10 moves, so the previous 9 would be needed for that)
-... 
-using a one-layer network of 9 neurons, this should be good enough...
----
-Adding in the last 3 moves as state variable
-- performance after 100 trials was bad
-- run for 1000 trials to see performance
-- might need to change reward funciton... get penalty for being hit maybe...
-- might do exacly what medium article did, cos this may not work, see after 1000 trials with currents settings
-- need to compare to random agent's score to see if my agent is even better!
-- should grab random agents behaviour (avergaed) for x trials 
-- the beginning trial rewards seem to be important because a lower reward in these early trials are affecting learning, probably because no penalty for being hit means that i am not really "crossing" off actions to do in certain states, and i am just waiting to find the better action (better than o probably) which will then get chosen more likley (unless epsilon says otherwise...), should tinker with reward function asap, leave network setup for now
-penalty should be there, other env's ive worked with have it, so look into it!
 
-ALSO start writing up the report (intro and background or something, though this would be nice having some results to work against... still can do it though, at least background anyway)
+- reward function (e.g. score, health gap)
 
----
+- modifying (probably adding to give more information to agent) state variables = possibly add in the last 4 states as a extreme
+= adding in previous move indexes (normalised of course), last 4 to start off with, but the super moves and the more complex combos will require more... (ryu's highest combo is 10 moves, so the previous 9 would be needed for that), medium may be using 20 which is more than enough for me
+
+- adding in combiantional actions
+===
 reward functions: 
-- penalty for being hit: -2000?, higher than any score from an attack i've seen  of 1000 for shoryuken (red hadouken or super could be more but i'm not considering this just yet)
-how can i assign penalties though? if the agent is in a starting state and performs an action, if the agent is hit then the enemy is no longer active right?so if theyre health decreases after their action has finished (interrupted) then we should assign a negative reward there,
-though what if both players get hit? well we'll assign the penalty to the total reward gotten from that action anyway
+- ADDED penalty for being hit
 SHOULD have penalty in respective to amount health lost, but will have fixed penalty for now
 
 INCREASED frame window for movement, but now it won't do execute a hadouken when a movement takes so long...
-IDEALLY i need a way to allow movement frames to be dynamic, so i can execute hadoukens with small amount of frames... or maybe just settle with basic movement to win games? this could be an advantage, saying this is the power of the agent which doesn't execute complex commands... do i need as many past action move idexes then? maybe not... though i think it helps the player move closer to the agent if it knows it hasn't moved closer to them? i dunno
+IDEALLY i need a way to allow movement frames to be dynamic, so i can execute hadoukens with small amount of frames... or maybe just settle with basic movement to win games? this could be an advantage, saying this is the power of the agent which doesn't execute complex commands... do i need as many past action move idexes then? possibly not
+DECREASED to 4 because it should work on 4 still surely if movement is best for a set of states
 
-maybe add in the combinational actions, could hurt i guess...
-
-
+PROBLEM
 you get score for breaking the objects in the background...
-and you get no score if the player blocks, which should really be encouraging the player instead of "no effect" on reward for the player, so i will use health difference as reward definiton, especially because breaking objects gives you rewards, and the rewards in code seem to multiplied by 10 where the game doesn't...
-health gap after each action as reward (each frame get reward, even during attacks, well no because if the player gets hit during a kick with a flying projectile, we do not want to reward the frames of active kicking...)
-where the the reward will be equal to the health gap, so for example, max reward is 176 is the player did an attack that took the entire health of the enemy in one action
-where maintaining the health gap, i.e. doing an action and losing health will also be rewarded with the health gap amount.
-When the health gap is negative, for every action the agent does that maintains the negative health gap or increases it, the action will get a higher penalty, where actions that decrease the health gap will get a slighly less reward (which is a bit lame) but it might help... should implement
-
+and you get no score if the player blocks, which should really be encouraging the player instead of "no effect" on reward for the player, so i will use health difference as reward definiton, especially because breaking objects gives you rewards
 using the health gap function, we hope that the agent will execute actions that move the agent closer to the enemy to attack and reduce the health gap, since this will yield the most long term reward
 similar, always to attack the enemy to increase a positive health gap
-
 on the other hand, maximising score should have made the agent attack the enemy too, but the score from breaking objects would have derailed the network (and may have done so already)
-
-use medium article's reward and states, may include more states and previous actions, though they might be using 20, which would be more than enough for me
-
 health is an important part of state because we do not need the agent attacking so recklessly when it has so much higher health
 similarly, we do not need it to tackle so much with higher health when time will run out, so clock should be included too
+OK
 
-do i really known which action is receiving the +1000 reward? possible the last action or some action in the very least, even if we don't see it
-which makes me think, what happens for an action that is being executed when the agent is being hit... THINk ABOUT maybe have some way to only attack when agent_active is not active
-although, surely when the agent is being hit, then agent_active is 0, so no action will be executed and nothing will be added to the network
-OKAY make sure nothing is added to the network when an action isnt even executed,because there has to be some action (even an empty one) that makes the RL loop continue, which means the network will learn after every official/actual action!
-- check if there is ever moments where frame_count = 1 even occurs then... YEP there is... i think these are frame where the agent can not hit and is therefore made inactive through the game... so if there is no combat or directional action active, then do not train?
-WAIT if i am only training when the agent does an action, then what consequences are there? well does this mean during the time where the agent is getting hit and so it cannot execute actions, we skip these frames... which is fine, cos we are then skipping the enemy's actions frame window too
-as long as the enemy can attack and reduce reward during an action, which it can because a long range attack from an enemy to the agent executing any action, should stop that action when hit with enemy's attack, and then the action is added to the network with consequential reward of 0, but if penalty for being hit if reward function defined as so
-SO adding a valid action to the network should be fine, because the agent will always be executing actions and doesnt when it is not capable of doing, for which then the loop moves in single frames, but we do not add anything to the network anyway so its fine. MAKE SURE OF THIS, RE-READ and RE-EVALUATE!
-
-TODO
-Should only train when the agent is non-active essentially, not if it is non-active due to round/match ended
-
-the score from breaking objects seems to make the agent jump up all the time in a particular training session, probably because the agent was hit before it did another action and it fell and to get the reward of the crate breaking... not what we want maate
 
 the "done" variable might have trouble firing because i am skipping frames and stuff, so i need to make sure i step through in every loop to get the latest done variable
+AND should only train when the agent is non-active essentially, not if it is non-active due to round/match end
 
 ---
 
