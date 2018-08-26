@@ -194,6 +194,39 @@ OK
 the "done" variable might have trouble firing because i am skipping frames and stuff, so i need to make sure i step through in every loop to get the latest done variable
 AND should only train when the agent is non-active essentially, not if it is non-active due to round/match end
 
+
+TEST if a step with one frame ever occurs now, it does and i'm not sure why...
+
+How can i handle the case of being stunned, where i shouldn't be training at this point, how do stuns work in sf2 anyway...
+FOUND STUN variable, do not train if stunned
+This value is 256 in the buildup animations of being stunned, which is the same thing as being stunned in my eyes, i dont think this value is 256 when the stun meter is building but has not reached, but 256 when confirmed stun but is the value when the stars arent shown and the agent is still falling, but it has triggered its stun so when agent gets up, they will be stunned, with stun = 1
+DONE
+
+adding in combination actions
+DONE
+using more previous actions
+DONE
+- going to run for 1000 trials and improvement (or lack of) made, then go to new reward function finally
+= i wonder if too much training due to the many 4 frame directional actions is causing some issue?
+TEST with both 4 frames and 20 frames
+20 frames - got worse in 500 trials
+testing 4 frames with less epsilon decay, penalty is also relative to health lost
+
+adding in health reward functional
+- reward for not getting hit may help a lot 
+
+check if epsilon is going to min to quickly.... maybe go down after each trial?
+DONE
+
+fixed bug 
+SO re run current reward function before changing to health function
+
+ALSO might have standard action list, don't really need combinational i feel like
+
+Health reward function
+- calculate the difference and always give the reward, even if the health gap is unchanged, which may make the deciding factor for this function
+(reward is not applied frame by frame, but after every action, which is the RL way)
+
 ---
 
 8) run random agent and use this as a comparison to our agent, can do this for directional actions too
@@ -217,6 +250,8 @@ ARCHIVE
 #     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
 #     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
 #     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
+#     [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
 #     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
 #     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
 

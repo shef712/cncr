@@ -13,15 +13,17 @@ import math
 gym.logger.set_level(40)
 
 actions = [
-    # directions action
+    # directions only
     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
 
-    # combat action
+    # combat only
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -29,11 +31,41 @@ actions = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     
-    # empty action
+    # direction + combat
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    
+    [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+    
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
-state_n = 17
-actions_memory_n = 3
+actions_memory_n = 10
+state_n = (14 + actions_memory_n)
 
 class DQN:
     def __init__(self, env):
@@ -54,7 +86,7 @@ class DQN:
 
     def create_model(self):
         model = Sequential()
-        model.add(Dense(9, input_dim=state_n, activation="relu"))
+        model.add(Dense(32, input_dim=state_n, activation="relu"))
 
         # model.add(Dense(24, input_dim=state_n, activation="relu"))
         # model.add(Dense(48, activation="relu"))
@@ -96,10 +128,9 @@ class DQN:
         self.target_model.set_weights(target_weights)
 
     def act(self, state):
-        self.epsilon *= self.epsilon_decay
-        self.epsilon = max(self.epsilon_min, self.epsilon)
+        # self.epsilon *= self.epsilon_decay
+        # self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
-            # return random.randint(0,len(actions[:6])-1)
             return random.randint(0,len(actions) - 1)
         return np.argmax(self.model.predict(state)[0])
 
@@ -180,7 +211,7 @@ class DQN:
         # normalise
         agent_x = (agent_x - min_x) / range_x if not normalised_agent_x else agent_x
         agent_y = (agent_y - min_y) / range_y
-        enemy_x = (enemy_x - min_x) / range_x if not normalised_enemy_x else agent_x
+        enemy_x = (enemy_x - min_x) / range_x if not normalised_enemy_x else enemy_x
         enemy_y = (enemy_y - min_y) / range_y
         agent_health = agent_health / max_health
         enemy_health = enemy_health / max_health
@@ -202,17 +233,17 @@ def train_network():
     env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.Ryu')
     dqn_agent = DQN(env=env)
 
-    trials = 100
-    min_frame_window = 20
-    max_frame_window = 40
+    trials = 500
+    min_frame_window = 4
     max_actions = 10000
-    penalty = 2000
+    penalty_factor = 50
 
     total_rewards = []
+    rounds_won = 0
     for trial in range(trials):
         cur_state = env.reset()
         all_actions_memory = []
-        normalised_empty_action = 12/len(actions)
+        normalised_empty_action = (len(actions)-1)/len(actions)
         intial_state = [0.373134328,1,0.626865672,1, 176,176, 0,0,0,0, 0.253731344,1, 0,0]
         for n in range(actions_memory_n):
             intial_state.append(normalised_empty_action)
@@ -222,7 +253,6 @@ def train_network():
         cur_agent_health = 176
         action_step = 0
         total_reward = 0
-        rounds_won = 0
         new_clock = 0
         agent_stun = 0
         done = False
@@ -256,10 +286,10 @@ def train_network():
                 rounds_won = info["agent_matches_won"]
                 agent_stun = info["agent_stun"]
 
-                total_action_reward += reward
                 if reward == 1000:
                     reward = 0
-
+                total_action_reward += reward
+                
                 if info["agent_health"] < 0 or info["enemy_health"] < 0 or info["clock"] == 0:
                     done = True
                     break
@@ -279,8 +309,9 @@ def train_network():
             
             # assign penalty if agent is hit (loses health)
             if cur_agent_health > new_agent_health:
+                diff_health = cur_agent_health - new_agent_health
                 cur_agent_health = new_agent_health
-                total_action_reward = total_action_reward - penalty
+                total_action_reward = total_action_reward - (penalty_factor*diff_health)
 
             # print("--- STEP ", action_step, "(", action_array , "), TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
             
@@ -291,8 +322,9 @@ def train_network():
                     dqn_agent.replay()
                     dqn_agent.target_train()
 
-                    delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
-                    _, _, done, _ = env.step(delay_action)
+                    if not agent_directional_active:
+                        delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+                        _, _, done, _ = env.step(delay_action)
 
                 done = True if action_step >= max_actions else done
 
@@ -304,8 +336,11 @@ def train_network():
             
             total_reward += total_action_reward
 
-        print("Trial ", trial, ", rounds won = ", rounds_won, ", total_reward = ", total_reward)
+        dqn_agent.epsilon *= dqn_agent.epsilon_decay
+        dqn_agent.epsilon = max(dqn_agent.epsilon_min, dqn_agent.epsilon)
+        print("Trial ", trial, ", rounds won = ", rounds_won, ", total_reward = ", total_reward, " (epsilon value = ", dqn_agent.epsilon, ")")
         total_rewards.append(total_reward)
+
         if trial % 100 == 0:
             dqn_agent.save_model("saved_models/ryu-trial-{}.model".format(trial))
 
@@ -324,7 +359,7 @@ def show_network():
     for trial in range(trials):
         cur_state = env.reset()
         all_actions_memory = []
-        normalised_empty_action = 12/len(actions)
+        normalised_empty_action = (len(actions)-1)/len(actions)
         intial_state = [0.373134328,1,0.626865672,1, 176,176, 0,0,0,0, 0.253731344,1, 0,0]
         for n in range(actions_memory_n):
             intial_state.append(normalised_empty_action)
