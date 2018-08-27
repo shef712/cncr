@@ -13,15 +13,17 @@ import math
 gym.logger.set_level(40)
 
 actions = [
-    # directions action
+    # directions only
     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
 
-    # combat action
+    # combat only
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -29,11 +31,39 @@ actions = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     
-    # empty action
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    # direction + combat
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    
+    [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    
+    [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0]]
 
-state_n = 17
 actions_memory_n = 3
+state_n = (14 + actions_memory_n)
 
 class DQN:
     def __init__(self, env):
@@ -41,27 +71,20 @@ class DQN:
 
         self.memory = deque(maxlen=2000)
 
-        self.gamma = 0.85
+        self.gamma = 0.9
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
-        self.learning_rate = 0.005
-        
-        self.tau = .125
+        self.epsilon_decay = 0.997 # 0.97, 0.997
+
+        self.learning_rate = 0.015 # 0.005
+        self.tau = 0.2 # 0.125
 
         self.model = self.create_model()
         self.target_model = self.create_model()
 
     def create_model(self):
         model = Sequential()
-        model.add(Dense(9, input_dim=state_n, activation="relu"))
-
-        # model.add(Dense(24, input_dim=state_n, activation="relu"))
-        # model.add(Dense(48, activation="relu"))
-        # model.add(Dense(24, activation="relu"))
-
-        # model.add(Dense(len(actions[:6])))
-
+        model.add(Dense(42, input_dim=state_n, activation="relu"))
         model.add(Dense(len(actions)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
@@ -71,7 +94,8 @@ class DQN:
         self.memory.append([state, action, reward, new_state, done])
 
     def replay(self):
-        batch_size = 32
+        # batch_size = 32
+        batch_size = 24
 
         if len(self.memory) < batch_size: 
             return
@@ -96,10 +120,9 @@ class DQN:
         self.target_model.set_weights(target_weights)
 
     def act(self, state):
-        self.epsilon *= self.epsilon_decay
-        self.epsilon = max(self.epsilon_min, self.epsilon)
+        # self.epsilon *= self.epsilon_decay
+        # self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
-            # return random.randint(0,len(actions[:6])-1)
             return random.randint(0,len(actions) - 1)
         return np.argmax(self.model.predict(state)[0])
 
@@ -113,7 +136,7 @@ class DQN:
         # define variable limits
         min_x = 33554487 # LHS
         max_x = 33554889 # RHS
-        min_y = 122 # peak of jump
+        min_y = 0 # peak of jump
         max_y = 192 # ground
         range_x = max_x - min_x
         range_y = max_y - min_y
@@ -180,7 +203,7 @@ class DQN:
         # normalise
         agent_x = (agent_x - min_x) / range_x if not normalised_agent_x else agent_x
         agent_y = (agent_y - min_y) / range_y
-        enemy_x = (enemy_x - min_x) / range_x if not normalised_enemy_x else agent_x
+        enemy_x = (enemy_x - min_x) / range_x if not normalised_enemy_x else enemy_x
         enemy_y = (enemy_y - min_y) / range_y
         agent_health = agent_health / max_health
         enemy_health = enemy_health / max_health
@@ -202,40 +225,47 @@ def train_network():
     env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.Ryu')
     dqn_agent = DQN(env=env)
 
-    trials = 100
-    min_frame_window = 20
-    max_frame_window = 40
-    max_actions = 10000
-    penalty = 2000
+    trials = 1500 # 150, 1500
+    min_frame_window = 4
+    max_actions = 20000
 
     total_rewards = []
+
+    agent_health = 176
+    enemy_health = 176
+
+    trial_n = []
+    epsilon_n = []
     for trial in range(trials):
         cur_state = env.reset()
         all_actions_memory = []
-        normalised_empty_action = 12/len(actions)
-        intial_state = [0.373134328,1,0.626865672,1, 176,176, 0,0,0,0, 0.253731344,1, 0,0]
+        normalised_empty_action = (len(actions)-1)/len(actions)
+        intial_state = [0.373134328,1,0.626865672,1, 1,1, 0,0,0,0, 0.253731344,1, 0,0]
         for n in range(actions_memory_n):
             intial_state.append(normalised_empty_action)
             all_actions_memory.append(normalised_empty_action)
         cur_state = (np.array(intial_state)).reshape(1, state_n)
 
-        cur_agent_health = 176
         action_step = 0
         total_reward = 0
-        rounds_won = 0
+        
+        done = False
+
         new_clock = 0
         agent_stun = 0
-        done = False
+        continuetimer = 0
+        agent_rounds_won = 0
+        agent_matches_won = 0
+        # above is setup for a new trial
         while True:
-            env.render()
-
+            # env.render()
+            
             action = dqn_agent.act(cur_state)
             action_array = actions[action]
             
             frame_count = 0
             total_action_reward = 0
 
-            # determine which type of action it is
             agent_directional_active = 0
             agent_combat_active = 0
             if (0 <= action and action < 6) or action == 12:
@@ -243,25 +273,35 @@ def train_network():
             else: 
                 agent_combat_active = 1
 
+            invalid_action = False
+            damage_dealt = 0
+            # above is setup for a new action
             while True:
-                env.render()
+                # env.render()
                 frame_count += 1
  
-                new_state, reward, done, info = env.step(action_array)
+                pixel_new_state, reward, done, info = env.step(action_array)
                 new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,state_n)
-                
+            
                 agent_combat_active = new_state[0][12]
+
                 new_clock = info["clock"]
                 new_agent_health = info["agent_health"]
-                rounds_won = info["agent_matches_won"]
+                new_enemy_health = info["enemy_health"]
                 agent_stun = info["agent_stun"]
+                continuetimer = info["continuetimer"]
+                agent_rounds_won = info["agent_rounds_won"]
+                agent_matches_won = info["agent_matches_won"]
 
-                total_action_reward += reward
-                if reward == 1000:
-                    reward = 0
+                all_zeros = not np.any(pixel_new_state)
+                if all_zeros:
+                    agent_health = 176
+                    enemy_health = 176
+                    new_agent_health = 176
+                    new_enemy_health = 176
 
-                if info["agent_health"] < 0 or info["enemy_health"] < 0 or info["clock"] == 0:
-                    done = True
+                if info["agent_health"] <= 0 or info["enemy_health"] <= 0 or info["clock"] == 0 or info["clock"] == 5500000000000099:
+                    invalid_action = True
                     break
                 
                 if agent_directional_active:
@@ -272,67 +312,79 @@ def train_network():
                 elif not agent_combat_active:
                     break
 
-            # add latest action to action memeory
             for taken_action in range(actions_memory_n, 0, -1):
                 new_state[0][-taken_action] = all_actions_memory[-taken_action]
             all_actions_memory.append(action/len(actions))
             
-            # assign penalty if agent is hit (loses health)
-            if cur_agent_health > new_agent_health:
-                cur_agent_health = new_agent_health
-                total_action_reward = total_action_reward - penalty
-
+            if frame_count > 1:
+                total_action_reward = new_agent_health - new_enemy_health
+                
             # print("--- STEP ", action_step, "(", action_array , "), TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
             
-            if not done and not agent_stun > 0:
+            if not invalid_action and not agent_stun > 0 and not all_zeros:
                 if frame_count > 1:
                     # print("TRAINING at --- STEP ", action_step)
                     dqn_agent.remember(cur_state, action, total_action_reward, new_state, done)
                     dqn_agent.replay()
                     dqn_agent.target_train()
 
-                    delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
-                    _, _, done, _ = env.step(delay_action)
+                    if not agent_directional_active:
+                        delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+                        _, _, done, _ = env.step(delay_action)
 
                 done = True if action_step >= max_actions else done
 
-            if done:
-                break
-            
             cur_state = new_state
             action_step += 1
-            
-            total_reward += total_action_reward
 
-        print("Trial ", trial, ", rounds won = ", rounds_won, ", total_reward = ", total_reward)
+            if (new_enemy_health < enemy_health):
+                damage_dealt = enemy_health - new_enemy_health
+                enemy_health = new_enemy_health
+            else:
+                damage_dealt = 0
+            total_reward += damage_dealt
+
+            if done:
+                break
+
+        dqn_agent.epsilon *= dqn_agent.epsilon_decay
+        dqn_agent.epsilon = max(dqn_agent.epsilon_min, dqn_agent.epsilon)
+        print("Trial ", trial, "matches won = ", agent_matches_won,  " rounds won = ", agent_rounds_won, ", total_reward = ", total_reward, " (epsilon value = ", dqn_agent.epsilon, ")")
+
         total_rewards.append(total_reward)
-        if trial % 100 == 0:
-            dqn_agent.save_model("saved_models/ryu-trial-{}.model".format(trial))
+        trial_n.append(trial)
+        epsilon_n.append(dqn_agent.epsilon)
 
-    dqn_agent.save_model("saved_models/ryu.model")
-    plot_running_avg(total_rewards)
+        if trial % 75 == 0:
+            dqn_agent.save_model("ryu/guile-trial-{}.h5".format(trial))
+
+    #plot_running_avg(total_rewards)
+    plt.plot(trial_n, total_rewards)
+    avg_reward = sum(total_rewards)/len(total_rewards)
+    epsilon_n = [i*avg_reward for i in epsilon_n]
+    plt.plot(trial_n, epsilon_n)
+    plt.show()
 
 def show_network():
     env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.Ryu')
     dqn_agent = DQN(env=env)
-    dqn_agent.load_model("saved_models/ryu-trial-300.model")
+    dqn_agent.load_model("ryu/guile.h5")
+    dqn_agent.epsilon = 0
 
     trials = 1
     min_frame_window = 4
-    max_frame_window = 40
-    max_actions = 10000
+    max_actions = 20000
     for trial in range(trials):
         cur_state = env.reset()
         all_actions_memory = []
-        normalised_empty_action = 12/len(actions)
-        intial_state = [0.373134328,1,0.626865672,1, 176,176, 0,0,0,0, 0.253731344,1, 0,0]
+        normalised_empty_action = (len(actions)-1)/len(actions)
+        intial_state = [0.373134328,1,0.626865672,1, 1,1, 0,0,0,0, 0.253731344,1, 0,0]
         for n in range(actions_memory_n):
             intial_state.append(normalised_empty_action)
             all_actions_memory.append(normalised_empty_action)
         cur_state = (np.array(intial_state)).reshape(1, state_n)
 
         action_step = 0
-
         done = False
         while True:
             env.render()
@@ -357,14 +409,8 @@ def show_network():
                 new_state, reward, done, info = env.step(action_array)
                 new_state = (np.array(dqn_agent.pre_process(info))).reshape(1,state_n)
                 
-                agent_combat_active = new_state[0][6]
+                agent_combat_active = new_state[0][12]
 
-                total_action_reward += reward
-
-                if info["agent_health"] < 0 or info["enemy_health"] < 0 or info["clock"] == 0:
-                    done = True
-                    break
-                
                 if agent_directional_active:
                     if agent_combat_active:
                         agent_directional_active = 1
@@ -376,12 +422,11 @@ def show_network():
             for taken_action in range(actions_memory_n, 0, -1):
                 new_state[0][-taken_action] = all_actions_memory[-taken_action]
             all_actions_memory.append(action/len(actions))
-            
-            # print("--- STEP ", action_step, " TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
 
             if frame_count > 1:
-                delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
-                _, _, done, _ = env.step(delay_action)
+                if not agent_directional_active:
+                    delay_action = [0,0,0,0, 0,0,0,0, 0,0,0,0]
+                    _, _, done, _ = env.step(delay_action)
 
             done = True if action_step >= max_actions else done
 

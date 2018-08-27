@@ -193,7 +193,7 @@ OK
 
 the "done" variable might have trouble firing because i am skipping frames and stuff, so i need to make sure i step through in every loop to get the latest done variable
 AND should only train when the agent is non-active essentially, not if it is non-active due to round/match end
-
+DONE
 
 TEST if a step with one frame ever occurs now, it does and i'm not sure why...
 
@@ -211,21 +211,122 @@ DONE
 TEST with both 4 frames and 20 frames
 20 frames - got worse in 500 trials
 testing 4 frames with less epsilon decay, penalty is also relative to health lost
+DONE
 
 adding in health reward functional
 - reward for not getting hit may help a lot 
+DONE
 
 check if epsilon is going to min to quickly.... maybe go down after each trial?
 DONE
 
 fixed bug 
 SO re run current reward function before changing to health function
+DONE
 
 ALSO might have standard action list, don't really need combinational i feel like
+DONE
 
 Health reward function
 - calculate the difference and always give the reward, even if the health gap is unchanged, which may make the deciding factor for this function
 (reward is not applied frame by frame, but after every action, which is the RL way)
+DONE
+
+- increase epsilon decay
+- standard moves
+DONE
+
+= how will the health reward function work?
+if negative health gap, all moves that do not decrease this gap will have negative reward
+but, what about directional moves to move closer to the enemy? technically this will get a negative reward as well.. though at least this will have the "best" long term reward, and thus the action to mvoe towards the enemy will have the most reward!
+DONE
+
+Try and get continue timer to work, because then we can have actual rounds as part of the trial
+FIXED
+
+Is there a clever way to make the player execute hadoukens?
+
+directional action(s) will execute in between rounds
+FIXED
+
+Change batch size?
+
+RYU won two matches and lost third on trial 36!
+I THINK a network against each different enemy would help, which makes sense since a different play style is needed against each character
+
+Maybe it needs more layers to combat the different player styles...
+DONE
+
+"Rounds won" resets for each match, so increment every time rounds win goes 
+CHECK if actions were being executed when moving to next character
+
+what if a reward function that gave massive reward for hurting the enemy, and massive penalty for losing health?
+forget score and health gap?
+
+create a folder for each character, and a model for each enemy character?
+
+technically the hadouken wont get rewarded properly because the directions leading up the hadouken dont get any reward, though they wont get a penalty assuming they arent hit while pressing the actions, and if the previous directions are pressed than surely the network will be clever enough to output the next reward (punch) to attack the enemy and get reward, ideally anyway
+
+playing with hyperparameters:
+caring more about long term reward
+quicker epsilon decay
+increase learning rate
+greater update of weight changes to target network weight changes
+
+- decrease epsilon decay slightly
+
+decrease actions list to standard again, with memory_actions_= 2 -> 3
+try batch size decrease to 24 as well
+DONE
+
+is there a way to reward for blocking?
+well health gap helps for now...
+DONE
+
+need a better reward indicator of over matches, so do total reward from damage dealth, i.e. enemy health lost 
+DONE
+
+CREATED figure_3.png
+
+
+does the "up" mess up the network in any way?
+DONT THINK SO cos the agnet is combat active 
+
+monday = write first draft abstract, into and plan for background
+can change abstract when we get results...
+
+method can easily be our setup for our agent, results is most important then...
+
+plot epsilon line as well, to see its effect, may need to construct a different linear or quadratic function for epsilons value over trials
+
+
+for training, i should keep epsilon slowly trail for until 500-750 trials for a 1500 trial length
+DONE
+
+        self.gamma = 0.9
+        self.epsilon = 1.0
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.997 # 0.97, 0.997
+
+        self.learning_rate = 0.015 # 0.005
+        self.tau = 0.2 # 0.125
+Figure 4
+
+
+recheck DQN logic...
+compare with other sources
+
+another metric for improvement over random agent is amount of time agent survives per trial
+
+pass in previous 4 states now, this may help somehow...
+
+increase memory to hold last 5000 steps
+should mean we always have a bigger wealth of experience to train from
+what if memory is full, do new memories get added in? yes
+maybe we shouldn't train from the bad games to much, and only train if the reward is a certain level?
+though RL would dictate that these actions would not be chosen then...
+
+reduce unecessary states like: agent_jump?
 
 ---
 
@@ -244,54 +345,83 @@ BELOW (BONUS) - IGNORE
 ARCHIVE
 -------
 
-# actions = [
-#     # directions only
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
-#     [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+actions = [
+    # directions only
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
 
-#     # combat only
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-#     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    # combat only
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+actions = [
+    # directions only
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], 
+    [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+
+    # combat only
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     
-#     # direction + combat
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
-#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+    # direction + combat
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
     
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
-#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
     
-#     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
-#     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-#     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-#     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
     
-#     [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-#     [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-#     [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-#     [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
     
-#     [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-#     [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-#     [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-#     [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
     
-#     [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
-#     [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
     
-#     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+
+
+                    # print("TRAINING at --- STEP ", action_step)
+
+
+            # print("--- STEP ", action_step, "(", action_array , "), TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
+            
