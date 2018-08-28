@@ -318,7 +318,9 @@ compare with other sources
 
 another metric for improvement over random agent is amount of time agent survives per trial
 
-pass in previous 4 states now, this may help somehow...
+pass in previous 4 states now, this may help...
+
+
 
 increase memory to hold last 5000 steps
 should mean we always have a bigger wealth of experience to train from
@@ -328,20 +330,143 @@ though RL would dictate that these actions would not be chosen then...
 
 reduce unecessary states like: agent_jump?
 
+PROBLEM
+that the agent is on the floor or hit and is trying tp execute valid moves!
+when executing combat moves, then agent_enemy_combat is fine, because it knows it cannot execute the move for the full frames
+but directionals are deemed as valid when the agent is on the floor
+using agent_hit variable to execute actions or not
+DONE
+
+performance looks better at early stages of training...
+i wonder if it is best to stop training when the agent behaves well, though i cant tell that with epsilon being so high...
+I'll have to hope that the different circumstances of our enemy attacking doesnt mess up our agent's behaviour... surely it'll pick the option that is best for it after experiencing so many matches with the enemy
+
+still does hadoukens at min_frame_window = 40
+
+
+NEED to run several tests of why my agent is better (or not) than my agent
+Use same characters
+Tests for time survived (plot average match time), damage dealth per match,
+which would paint a picture of agent performance
+
+Try testing with M Bison, the most OP character...
+
+Talk about common techniques the agent has learned:
+- anti-air
+- downslide (for bison) as soon as game start_info_state
+show pictures (3/4 frames to show activity)
+
+All this needs to come from trained agent...
+
+
+Train for 50 trials, with epsilon decaying to min around trial 40.
+Test how good this network would do.
+If similar behaviour to random agent, make sure to say trained on x states, and y actions and 50 trials.... may do 100 trials if it looks better for "training" purposes
+
+Email morteza and say results are okay, definitely not "beaten" the game but performance is good, relaly good results have been difficult, ive expanded the network to include 4 previou states and actions, etc but still this is the result
+Going to try 20 states, and see 
+
+trial 25, 35 and 40 look good to me...
+
+MBison Folder for above
+
+
+Increasing gamma, and decreasing epsilon decay, increasing tau
+Memory 1000 for 100 batch size
+
+When i get good results i will compare the effects of changing variables
+
+
+How about a really quick epsilon decay and then see its peformance?
+
+
+TRIAL 30-35 LOOKS GOOD, a lot of slide downs and anti-airs
+(check ryu)
+
+Its winning a lot of rounds from 30-40, maybe just chnage epilson decay and use this agent?
+
+40+ seems good too, spams down slides
+
+50+ is good too, seems to do better in following matches too..
+
+60+ too, seems to love the corner slide and mid kick
+
+70+ is winning matches, still decent performance, but 75+ seems to be doing worse... (it usually wins when the corner trap can happen, otherwise not as well)
+its still winining matches i guess
+maybe around 60-70 is the sweet spot?
+
+if it is diverging,  maybe decrease tau or alpha?
+since performance may be doing worse
+
+okat, 80+ still winning, maybe a bit worse against guile, but better against ken...
+trial 88 still corner trapped guile and perfected him in a round, and doing decent against ken (anti air)
+
+would more layers help the agent against other characters?
+
+trial 90 still tries to corner trap, and blocks ocassionaly, anti air is there and it wins rounds still so i guess its okay,
+still doesnt win againt ken very well, maybe say that the network wins a lot more against guile and not on ken due to the network being fitted for guile, and should be trained on all characters
+we will try by adding my layers...
+
+Figure 5 is above
+2-trial
+
+NOW, added a second layer to see how well it does against other characters in particular
+
+Trial 10-15 is really good, winning 5 matches...
+10-20 seems to be perfecting the slide down move
+20+ corner trap seems to be forming
+late 20's corner trap doing well (mix of slide and mid kick)
+30+ corner and anti air going strong
+30-40 winning a lot of matches.... at epsilon 0.3
+
+TRY THIS with ryu
+
+40-50 seems to win a lot of matches too
+
+60+ seems to have learn corner trapping well but absolutely flops against ken
+
+70+ winning rounds but no matches, is it doing worse against guile now?
+Nah its still beasting against guile, and against ken is not bad but still losing
+
+I wonder if it would have been better to train against each character 50 times?
+resetting the epsilon?
+
+and then testing against the arcade?
+
+first try as ken as the first opponent and see if the agent beats ken as well as guile
+
+up to 90, performance against guile is good...
+
+that way i can say we trained bison against each character and here is the performances against each
+use either matches or rounds as performance indicator, whichever is better
+(need to get other statisitcs as well, to compare against random agent)
+
+agent would be really powerful if we could train on each character each time for 50 trials, and then it doing as well each time...
+
+try for guile, ken and chunli for now...
+
+90-100 really good performance against guile
+not bad against ken...
+
+figure 6 above
+
+
+load and see if good performance still
+
+
+clearly show_network isnt working, so after trial finish, just run then...
+
+THINGS TO DO:
+- run current network with ryu 
+- run network against ken and chun li and see the difference in matches won against them
+- set up graphs and tests for the trained agent after training, 100 trials only
+
+
 ---
+- run random agent and use this as a comparison to our agent, can do this for directional actions too
 
-8) run random agent and use this as a comparison to our agent, can do this for directional actions too
-
-9) come up with a research question, e.g. the effect of this variable or method on this environemnt, possibly applyong DQN on a complex environment sf2, or even just a interesting variable in sf2 that may increase convergence (if possible), effect of reward function...
-
-FRIDAY (email morteza and show progress and all work done above, for info and for update)
-
-BELOW (BONUS) - IGNORE
-
-10) RELATED to 7 but may not be needed, look at atari examples for frame skipping, the reccurent network may be implemented (which may not be a problem because of keras), look into using keras functional for the NN layers
-
-
-
+- come up with a research question, e.g. the effect of this variable or method on this environemnt, possibly applyong DQN on a complex environment sf2, or even just a interesting variable in sf2 that may increase convergence (if possible), effect of reward function...
+-------
 ARCHIVE
 -------
 
@@ -425,3 +550,6 @@ actions = [
 
             # print("--- STEP ", action_step, "(", action_array , "), TOOK ", frame_count, " FRAMES, REWARD = ", total_action_reward, " ---")
             
+
+
+                
