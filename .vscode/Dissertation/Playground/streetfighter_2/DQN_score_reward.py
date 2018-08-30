@@ -241,8 +241,6 @@ class DQN:
         return state
     
 def train_network():
-    # characters = ['Guile', 'Ken', 'ChunLi']
-    # for character in range(len(characters)):
     env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state='Champion.Level1.MBison')
     dqn_agent = DQN(env=env)
 
@@ -350,13 +348,13 @@ def train_network():
                 # action_reward = new_agent_health - new_enemy_health
                 
                 # reward for damage
-                if new_agent_health < agent_health and not (agent_health == 176 and     new_agent_health == 0):
+                if new_agent_health < agent_health and not (agent_health == 176 and new_agent_health == 0):
                     damage_recieved = agent_health - new_agent_health
                     agent_health = new_agent_health
                 else:
                     damage_recieved = 0
 
-                if new_enemy_health < enemy_health and not (enemy_health == 176 and     new_enemy_health == 0):
+                if new_enemy_health < enemy_health and not (enemy_health == 176 and new_enemy_health == 0):
                     damage_dealt = enemy_health - new_enemy_health
                     enemy_health = new_enemy_health
                 action_reward += damage_dealt - damage_recieved

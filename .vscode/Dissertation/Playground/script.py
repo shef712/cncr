@@ -27,7 +27,7 @@
 # Can get a "Universe" set of games now from various console systems
 
 import matplotlib.pyplot as plt
-a = 0.97
+a = 0.95
 b = 1
 count = 1
 x = []
@@ -71,3 +71,57 @@ plt.show()
 # a = [[0]*5]*2
 # a.append([1,1,1,1,1])
 # print(a)
+
+
+
+
+# for i in range(10):
+#     print(i)
+
+
+
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from matplotlib.ticker import MaxNLocator
+# from collections import namedtuple
+
+# n_groups = 3
+
+# agent_wins = (20, 35, 30)
+# agent_zero = ()
+# for i in range(len(agent_wins)):
+#     agent_zero = agent_zero + (0,)
+
+# random_wins = (25, 32, 34)
+# random_zero = ()
+# for i in range(len(random_wins)):
+#     random_zero = random_zero + (0,)
+
+# fig, ax = plt.subplots()
+
+# index = np.arange(n_groups)
+# bar_width = 0.35
+
+# opacity = 0.4
+# error_config = {'ecolor': '0.3'}
+
+# rects1 = ax.bar(index, agent_wins, bar_width,
+#                 alpha=opacity, color='b',
+#                 yerr=agent_zero, error_kw=error_config,
+#                 label='Agent Wins')
+
+# rects2 = ax.bar(index + bar_width, random_wins, bar_width,
+#                 alpha=opacity, color='r',
+#                 yerr=random_zero, error_kw=error_config,
+#                 label='Random Wins')
+
+# ax.set_xlabel('Characters')
+# ax.set_ylabel('Matches Won')
+# ax.set_title('Comparison between Trained Agent Vs Random Agent')
+# ax.set_xticks(index + bar_width / 2)
+# ax.set_xticklabels(('Guile', 'Ken', 'Chun-Li'))
+# ax.legend()
+
+# fig.tight_layout()
+# plt.show()

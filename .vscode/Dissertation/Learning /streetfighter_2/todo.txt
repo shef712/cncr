@@ -462,6 +462,27 @@ THINGS TO DO:
 - set up graphs and tests for the trained agent after training, 100 trials only
 
 
+Get learning graphs for each of the three players
+THEN compare agent when he runs through the first 3 levels of the arcade
+
+these graphs will be after the network is already trained against the previous one, so it wont be the same as a brand new training session
+
+
+(the states may be too similar which is why the network is always one action?)
+
+
+Maybe train with E Honda cos it'll be easier
+
+
+Performance is getting worse with the same network with following characters.
+So, retrain with a new model each time and get learning graphs, and then run for x trials and get matches won.
+
+
+
+
+Setting epsilon to 0.1 for the testing stage, checking 0.05 first if it works as well - probably won't mention
+
+
 ---
 - run random agent and use this as a comparison to our agent, can do this for directional actions too
 
@@ -552,4 +573,4 @@ actions = [
             
 
 
-                
+                agent_ready = 1320 # 1320 (MBISON), 1156 (RYU)
