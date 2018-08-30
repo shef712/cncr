@@ -24,8 +24,12 @@ TITLE
 
 INTRODUCTION
 ------------
-(Will be short one, will use part 2 proposal to aid this...)
-"Why the study is important? 
+Not too long
+
+Why the study is important? 
+Learning from interactions is a fundamental principle underlying the field of intelligence. Machine learning is a computational approach that incorporates learning, aiming to solve problems without being explicitly programmed to do so. Machine learning techniques have been applied to problems of scientific and economic interestss, inevitably increasing their popularity. 
+
+
 What its aim and objective is?
 Clearly state your research question.
 Contain the reasons for carrying out the study and the specific hypothesis to be tested.
@@ -53,11 +57,15 @@ Open AI Gym Retro and how their environments work (short description)
 
 How we collection our observations, and what we did with them.
 
+Takl about streetifghter and how it works
+
 Used keras for training the NN.
 
 Design choices made:
 - alternative to frame skipping and skipped frames to execute actions, so we got the reward of the action if it hit, missed or got interrupted
 - all used three characters, one character at a time to show the ability for our trained agent to learn and perform well
+- reward funcition of health graph
+- acion space
 
 Participants:
 - two people that have never played streetfigher before, 20-25 because it was the average of pro-gamers (online source).
@@ -74,6 +82,8 @@ Tests:
 Bison agent is trained against each character for 50 trials (x actions/states, average of y per trial). The trained agent's performance is tracked for 30 trials with performance indicated by damanage ratio (difference between damage dealt and damage received). Chosen over the health metric because it paints a better picture of the agent's performance in each trial because we can see how close the matches were. Random agent should at least be more one-sided against it, with our agent having a higher damage ratio since it moves more intelligently. Note that damage ratio can still be negative for matches that the agent has won and means that one round may have been a lot more one-sided, though the other rounds were really close, hence the win was a close one. This graph should support the wins bar chart - where random agents NEEDS to win less rounds/matches (matches preferably)
 1) Bar chart of percentage of wins, each character will have a bar for trained agent and random agent - we should state the average amount of rounds won if it helps the results.
 2) Agent's performance against each character (3 plots), compared to random agent against the same character using our performance indicator (damage ratio). Just a bit more match wins and a lower damage ratio is the very least i should aim for - preferable a high difference in wins and a close damage ratio plot is fine. 
+
+- Going to re run chunli's just to get a better case, and say ken was just hard to train against.
 
 3) Train agent against all 3 characters seperately and then run against the normal arcade mode and see how many matches it would win. This will most likely have bad performance so mention  a deeper network or more sophisticated algorithms could be used, e.g. recurrent neural networks or deep Q learning, use references to describe the advantages and how they could tackle the definite drawbacks of this project - hopefully M.Azad will understand)
 

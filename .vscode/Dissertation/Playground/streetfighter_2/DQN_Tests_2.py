@@ -239,17 +239,20 @@ def train_network():
     average_won = []
     random_average_won = []
 
+    dqn_agent = DQN()
     for c in range(len(characters)):
         state_name = 'Champion.MBisonVs' + characters[c]
         env = retro.make(game='StreetFighterIISpecialChampionEdition-Genesis', state=state_name)
-        dqn_agent = DQN()
 
         directional_frame_window = 20
         max_actions = 20000
 
-        test_trial = 50
-        random_trial = 80
-        trials = 100
+        trials = 50
+        random_trial = 0
+        if c == 3:
+            # going to run 30 test trials for trained agent and random agent, we expect poor performance for both
+            trials = 60
+            random_trial = 30
 
         agent_health = 176
         enemy_health = 176
@@ -265,6 +268,10 @@ def train_network():
         random_matches_won = []
         
         wins = 0
+
+        if not c == 3:
+            dqn_agent.epsilon = 1
+
         for trial in range(trials):
             cur_state = env.reset()
             states_memory = [ [0]*single_state_n ] * states_memory_n
@@ -286,10 +293,11 @@ def train_network():
             agent_hit = 0
             agent_ready = 1320
 
-            if trial >= test_trial and trial < random_trial:
-                dqn_agent.epsilon = 0
-            elif trial >= random_trial:
-                dqn_agent.epsilon = 1
+            if c == 3:
+                if trial >= random_trial:
+                    dqn_agent.epsilon = 1
+                else:
+                    dqn_agent.epsilon = dqn_agent.epsilon_min
 
             while True:
                 env.render()
@@ -370,7 +378,7 @@ def train_network():
 
                 if not invalid_action and not agent_stun > 0 and not all_zeros and action_step >= actions_memory_n:
                     if frame_count > 1:
-                        if trial < test_trial:
+                        if not c == 3:
                             dqn_agent.remember(cur_state, action, action_reward, new_state, done)
                             dqn_agent.replay()
                             dqn_agent.target_train()
@@ -388,59 +396,46 @@ def train_network():
                     break
 
                 # restrict matches to one character
-                if agent_matches_won > 0 and c == 0:
-                    if trial >= test_trial:
-                        wins += 1
-                    break
-
-                if agent_matches_won > 1 and c == 1:
-                    if trial >= test_trial:
-                        wins += 1
-                    break
-
-                if agent_matches_won > 2 and c == 2:
-                    if trial >= test_trial:
-                        wins += 1
-                    break
-
+                if not c == 3:
+                    if (agent_matches_won - c) > 0:
+                        break
+                
             print("Trial ", trial, "matches won = ", agent_matches_won,  " rounds won = ", agent_rounds_won, ", total_reward = ", total_reward, " (epsilon value = ", dqn_agent.epsilon, ")")
-            if trial < test_trial:
+            if not c == 3:
                 dqn_agent.epsilon *= dqn_agent.epsilon_decay
                 dqn_agent.epsilon = max(dqn_agent.epsilon_min, dqn_agent.epsilon)
-            elif trial >= test_trial and trial < random_trial:
-                trial_n.append((trial - test_trial) + 1)
-                total_rewards.append(total_reward)
-                rounds_won.append(agent_rounds_won)
-                matches_won.append(agent_matches_won - c)
-            elif trial >= random_trial:
-                random_trial_n.append((trial - random_trial) + 1)
-                random_total_rewards.append(total_reward)
-                random_rounds_won.append(agent_rounds_won)
-                random_matches_won.append(agent_matches_won - c)
+            else:
+                if trial < random_trial:
+                    trial_n.append(trial + 1)
+                    total_rewards.append(total_reward)
+                    rounds_won.append(agent_rounds_won)
+                    matches_won.append(agent_matches_won)
+                elif trial >= random_trial:
+                    random_trial_n.append((trial - random_trial) + 1)
+                    random_total_rewards.append(total_reward)
+                    random_rounds_won.append(agent_rounds_won)
+                    random_matches_won.append(agent_matches_won )
         
-        # each plot should be the runs for our trained agent and our random agent
-        plot(trial_n, total_rewards, random_trial_n, random_total_rewards, characters[c])
         env.close()
+        if c == 3:
+            plot(trial_n, total_rewards, random_trial_n, random_total_rewards, "Arcade")
 
-        # we will get a list of all characters 
-        average_rounds_won = sum(rounds_won)/(len(rounds_won)*2)
-        average_matches_won = sum(matches_won)/len(matches_won)
-        average_won.append([average_rounds_won, average_matches_won])
+            average_rounds_won = sum(rounds_won)/(len(rounds_won)*2)
+            average_matches_won = sum(matches_won)/len(matches_won)
+            average_won.append([average_rounds_won, average_matches_won])
 
-        random_average_rounds_won = sum(random_rounds_won)/(len(random_rounds_won)*2)
-        random_average_matches_won = sum(random_matches_won)/len(random_matches_won)
-        random_average_won.append([random_average_rounds_won, random_average_matches_won])
+            random_average_rounds_won = sum(random_rounds_won)/(len(random_rounds_won)*2)
+            random_average_matches_won = sum(random_matches_won)/len(random_matches_won)
+            random_average_won.append([random_average_rounds_won, random_average_matches_won])
 
-        print(characters[c], ": average_rounds_won = ", average_rounds_won, ", average_matches_won = ", average_matches_won, ", random_average_rounds_won = ", random_average_rounds_won, ", random_average_matches_won = ", random_average_matches_won)
-        print("-----------------------------")
+            print("Arcade: average_rounds_won = ", average_rounds_won, ", average_matches_won = ", average_matches_won, ", random_average_rounds_won = ", random_average_rounds_won, ", random_average_matches_won = ", random_average_matches_won)
+            print("-----------------------------")
 
     # each sub-list element is the agent's rounds/matches won for a character
-    print("agent's average round/match wins across all characters = ", average_won)
+    print("agent's average round/match wins in arcade = ", average_won)
 
     # each sub-list element is the random's rounds/matches won for a character
-    print("random's average round/match wins across all characters = ", random_average_won)
-
-    plot_barchart (characters, average_won, random_average_won)
+    print("random's average round/match wins in arcade = ", random_average_won)
 
 def plot(trial_n, total_rewards, random_trial_n, random_total_rewards, character_name):
     fig = plt.figure()
@@ -456,47 +451,7 @@ def plot(trial_n, total_rewards, random_trial_n, random_total_rewards, character
     name = "saved_plots/" + character_name + ".png"
     fig.savefig(name)
 
-def plot_barchart(characters_list, agent_wins_list, random_wins_list):
-    n_groups = len(characters_list)
-
-    agent_wins = ()
-    agent_zero = ()
-    for i in range(len(agent_wins)):
-        agent_wins = agent_wins_list[i]
-        agent_zero = agent_zero + (0,)
-
-    random_wins = ()
-    random_zero = ()
-    for j in range(len(random_wins)):
-        random_wins = random_wins_list[j]
-        random_zero = random_zero + (0,)
-
-    fig, ax = plt.subplots()
-
-    index = np.arange(n_groups)
-    bar_width = 0.35
-
-    opacity = 0.4
-    error_config = {'ecolor': '0.3'}
-
-    rects1 = ax.bar(index, agent_wins, bar_width,
-                    alpha=opacity, color='b',
-                    yerr=agent_zero, error_kw=error_config,
-                    label='Agent Wins')
-
-    rects2 = ax.bar(index + bar_width, random_wins, bar_width,
-                    alpha=opacity, color='r',
-                    yerr=random_zero, error_kw=error_config,
-                    label='Random Wins')
-
-    ax.set_xlabel('Characters')
-    ax.set_ylabel('Matches Won')
-    ax.set_title('Comparison between Trained Agent Vs Random Agent')
-    ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels((characters_list[0], characters_list[1], characters_list[2]))
-    ax.legend()
-
-    fig.tight_layout()
-    plt.show()
-
 if __name__ == "__main__":
+    train_network()
+
+    # show_network()

@@ -26,27 +26,27 @@
 # WORKS
 # Can get a "Universe" set of games now from various console systems
 
-import matplotlib.pyplot as plt
-a = 0.95
-b = 1
-count = 1
-x = []
-x.append(count)
-y = []
-y.append(b)
-while True:
-    b = b * a
-    count += 1
+# import matplotlib.pyplot as plt
+# a = 0.95
+# b = 1
+# count = 1
+# x = []
+# x.append(count)
+# y = []
+# y.append(b)
+# while True:
+#     b = b * a
+#     count += 1
 
-    x.append(count)
-    y.append(b)
+#     x.append(count)
+#     y.append(b)
 
-    # print("b = ", b, " COUNT ", count)
-    if b <= 0.1:
-        break
+#     # print("b = ", b, " COUNT ", count)
+#     if b <= 0.1:
+#         break
 
-plt.plot(x, y)
-plt.show()
+# plt.plot(x, y)
+# plt.show()
 
 
 
@@ -125,3 +125,4 @@ plt.show()
 
 # fig.tight_layout()
 # plt.show()
+
