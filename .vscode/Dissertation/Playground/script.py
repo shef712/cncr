@@ -126,3 +126,46 @@
 # fig.tight_layout()
 # plt.show()
 
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+from collections import namedtuple
+
+n_groups = 2
+
+agent_wins = (0.5, 0.5)
+agent_zero = (0, 0)
+
+human_wins = (0.25, 0.1333)
+human_zero = (0, 0)
+
+fig, ax = plt.subplots()
+
+index = np.arange(n_groups)
+bar_width = 0.35
+
+opacity = 0.4
+error_config = {'ecolor': '0.3'}
+
+rects1 = ax.bar(index, agent_wins, bar_width,
+                alpha=opacity, color='b',
+                yerr=agent_zero, error_kw=error_config,
+                label='Agent Wins')
+
+rects2 = ax.bar(index + bar_width, human_wins, bar_width,
+                alpha=opacity, color='r',
+                yerr=human_zero, error_kw=error_config,
+                label='Human Wins')
+
+ax.set_xlabel('Trial')
+ax.set_ylabel('Difference between damage dealth and damage received')
+ax.set_title('Performance between Trained Agent Vs Random Agent In Arcade')
+ax.set_xticks(index + bar_width / 2)
+ax.set_xticklabels(('Participant 1', 'Participant 2'))
+ax.legend()
+
+fig.tight_layout()
+plt.show()
+

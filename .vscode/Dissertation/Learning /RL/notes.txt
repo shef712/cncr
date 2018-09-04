@@ -144,6 +144,7 @@ Like all neural networks, they use coefficients to approximate the function rela
 By acting as a function approximator, we can take any number of possible states that can be represented as a vector and learn to map them to Q-values.
 
 Instead of discretizing the input space, which may seem like a pretty hacky solution to this problem that we’ll be encountering over and over in future situations, we can simply apply neural nets to the situation instead! That’s where the D in DQN comes from... i guess this term is interchangeable as long as we use NN in some form.
+UPDATE no, because if we are not using covolutional NN's, then it is a Q-Network.
 
 
 EXAMPLE: FrozenLake

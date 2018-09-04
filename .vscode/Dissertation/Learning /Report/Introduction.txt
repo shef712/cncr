@@ -18,86 +18,6 @@ ABSTRACT
 --------
 
 
-TITLE
------
-
-
-INTRODUCTION
-------------
-Not too long
-
-Why the study is important? 
-Learning from interactions is a fundamental principle underlying the field of intelligence. Machine learning is a computational approach that incorporates learning, aiming to solve problems without being explicitly programmed to do so. Machine learning techniques have been applied to problems of scientific and economic interestss, inevitably increasing their popularity. 
-
-
-What its aim and objective is?
-Clearly state your research question.
-Contain the reasons for carrying out the study and the specific hypothesis to be tested.
-Justify your general approach to the question.
-Previous research that has led up to your question should be summarised and referenced here.
-Provide predictions of what you think of your experiment or study will reveal and why those predictions were measured
-End this section with a short outline of your study, used to gain interest for your reader."
-
-
-SCIENTIFIC BACKGROUND
----------------------
-(Part 1 will aid this, for which we will add to as well)
-
-How Q-learning works, and then why we move to Q-Networks (to predict Q-Values without needing a lookup table, so we use a NN to output best approximations)
-
-Talk about NN and linear regression.
-
-METHOD
-------
-Data Collection
-
-"A precise description of the procedures followed is always necessary because it provides the basis for reaching an adequate interpretation of the data."
-
-Open AI Gym Retro and how their environments work (short description)
-
-How we collection our observations, and what we did with them.
-
-Takl about streetifghter and how it works
-
-Used keras for training the NN.
-
-Design choices made:
-- alternative to frame skipping and skipped frames to execute actions, so we got the reward of the action if it hit, missed or got interrupted
-- all used three characters, one character at a time to show the ability for our trained agent to learn and perform well
-- reward funcition of health graph
-- acion space
-
-Participants:
-- two people that have never played streetfigher before, 20-25 because it was the average of pro-gamers (online source).
-
-
-RESULTS
--------
-Data Analysis
-
-"The results should include tables, figures, and words; the purpose of all these is to summarize the findings. Remember however, that tables and figures are supplementary to the written text, so do not include them without stating what they are related to and what aspect of the results they describe. The written part should be a description, not an explanation, of what an intelligent reader might see by careful study of the tables and figures."
-"A good way to write the Results section is to describe the salient findings first in words and then to introduce the numerical and graphical evidence for support."
-
-Tests:
-Bison agent is trained against each character for 50 trials (x actions/states, average of y per trial). The trained agent's performance is tracked for 30 trials with performance indicated by damanage ratio (difference between damage dealt and damage received). Chosen over the health metric because it paints a better picture of the agent's performance in each trial because we can see how close the matches were. Random agent should at least be more one-sided against it, with our agent having a higher damage ratio since it moves more intelligently. Note that damage ratio can still be negative for matches that the agent has won and means that one round may have been a lot more one-sided, though the other rounds were really close, hence the win was a close one. This graph should support the wins bar chart - where random agents NEEDS to win less rounds/matches (matches preferably)
-1) Bar chart of percentage of wins, each character will have a bar for trained agent and random agent - we should state the average amount of rounds won if it helps the results.
-2) Agent's performance against each character (3 plots), compared to random agent against the same character using our performance indicator (damage ratio). Just a bit more match wins and a lower damage ratio is the very least i should aim for - preferable a high difference in wins and a close damage ratio plot is fine. 
-
-- Going to re run chunli's just to get a better case, and say ken was just hard to train against.
-
-3) Train agent against all 3 characters seperately and then run against the normal arcade mode and see how many matches it would win. This will most likely have bad performance so mention  a deeper network or more sophisticated algorithms could be used, e.g. recurrent neural networks or deep Q learning, use references to describe the advantages and how they could tackle the definite drawbacks of this project - hopefully M.Azad will understand)
-
-4) 2 humans that have never player streetfighter, trained for 50 runs, and recorded how many wins they got - use Bison vs Guile only, create bar chart of matches won with trained agent, random agent and human agent.
-
-Do some sort of null hypothesis.
-
-When talking about techniques learned, give images and trial numbers (of testing), so need to screen record each player's testing trials.
-2 pictures for each technique (jumping over projectiles, corner trap with slide and medium kick, defending, anti-air) - only use for techniques the agent does regularly.
-
-Make sure all figures are annotated.
-
-
-
 Discussion (Conclusion)
 ----------
 "In this section, discuss, interpret, and draw conclusions from your results in relation to your statement of the problem (and hypotheses). Here you consider the meaning of the results. 
@@ -105,11 +25,22 @@ Avoid simply re-describing the data.
 The results should be discussed in relation to the issues raised in the introduction and to the procedures used to obtain them. Apparent discrepancies within the data that are not clear from inspection of the tables and figures may also be explained. 
 This section also indicates how a better study might be conducted; for example, you may outline further studies that are suggested by the outcome of the present one. In this manner, discrepancies, inconsistencies and sources of error can be discussed. If the results disagree with previous findings of similar research studies, you should try to account for the discrepancies. This section also gives you with a chance to demonstrate independent thinking. //Evaluation"
 
-Mention one of the reasons that more trials was not trained on was because the agent would forget combo's like "down slide and medium kick", also one of the reasons why a small amount of random was allowed for the trained agent though i can't really justify that because randomness isn't meant to be included at all! Since the actions are meant to be soley predicted by the network, and otherwise would mean the network has not trained well.
-- Dont think i can mention that, though the code will show it
+Mention one of the reasons that more trials was not trained on was because the agent would forget combo's like "down slide and medium kick", 
 
 Mentiom tahat the technique for down slide is very specific to Bison, and i'm sure other characters trained with would find other instant and quick attacks, though there would be a definite down-side to this if a human player realises that the agent spams this move a lot and counters effectively.
 
+
+
+
+Talk about defending would have been a good technique to learn.
+
+maybe hyper parameters were bad
+
+design decision could have been better?
+
+
+
+if i have 4000+ words i'll be fine
 
 
 LITERATURE REVIEW
@@ -120,27 +51,12 @@ Include in appendix.
 Word count counts towards the total word count of the project."
 
 
-REFERENCES
-----------
-"Format the references in the style set out by the target journal in the guidelines for authors."
-
-1) Sutton, R.S. and Barto, A.G., 1998. Reinforcement learning: An introduction (Vol. 1, No. 1).
-2) Anderson, C.W., 1989. Learning to control an inverted pendulum using neural networks
-3) Gustafsson, F., 2016. Control of Inverted Double Pendulum using Reinforcement Learning.
-4) Zexi Chen, 2016, Implementing a Machine Learning Algorithm to Control an Inverted Pendulum Robot,
-University of Birmingham
-
-Get a 3/4 of a page of references at least.
-
-
 YOUTUBE LINK
 ------------
 Play "theres no easy way out" throughout a match that beats guile, ken and close with chunli (best i've seen basically). Link channel in report so i can upload and edit the video on the weekend.
 - Add on personal youtube channel "Shaf Liaquat"
 
 
-Appendices
-----------
-CODE
-
-SETUP (links to official tutorials for open ai, linux dual boot, tensorflow, keras)
+GITHUB
+------
+Clean code in last commit
